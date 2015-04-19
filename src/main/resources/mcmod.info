@@ -1,0 +1,10 @@
+[
+{
+  "modid": "widget",
+  "name": "Widget Framework",
+  "description": "A GUI framework for Minecraft, inspired by Java's Swing.",
+  "version": "0.1dev",
+  "mcversion": "1.8",
+  "authorList": ["Flood2d"]
+}
+]
