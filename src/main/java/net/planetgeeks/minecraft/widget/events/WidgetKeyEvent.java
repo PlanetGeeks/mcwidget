@@ -5,8 +5,10 @@ import net.planetgeeks.minecraft.widget.Widget;
 
 import org.lwjgl.input.Keyboard;
 
+import com.google.common.eventbus.Subscribe;
+
 @Getter
-public class WidgetKeyEvent extends WidgetEvent
+public abstract class WidgetKeyEvent extends WidgetEvent
 {
     private char typedChar;
     private int keyCode;
@@ -38,11 +40,8 @@ public class WidgetKeyEvent extends WidgetEvent
     	return Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT);
     }
     
-    public static class WidgetKeyTypeEvent extends WidgetKeyEvent
+    public static interface WidgetKeyListener
     {
-		public WidgetKeyTypeEvent(Widget component, char typedChar, int keyCode)
-		{
-			super(component, typedChar, keyCode);
-		}
+    	@Subscribe void onKeyEvent(WidgetKeyEvent event);
     }
 }

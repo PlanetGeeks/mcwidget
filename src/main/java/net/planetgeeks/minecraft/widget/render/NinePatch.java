@@ -2,12 +2,12 @@ package net.planetgeeks.minecraft.widget.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
 import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
-import net.planetgeeks.minecraft.widget.listeners.WidgetChangeListener;
 import net.planetgeeks.minecraft.widget.util.Drawable;
+
+import com.google.common.eventbus.Subscribe;
 
 public class NinePatch implements Drawable
 {
@@ -289,7 +289,7 @@ public class NinePatch implements Drawable
 		return top + middleHeight + bottom;
 	}
 	
-	public static class Dynamic extends NinePatch implements WidgetChangeListener
+	public static class Dynamic extends NinePatch
 	{
 		@Getter
 		private WidgetInteractive component;
@@ -303,16 +303,10 @@ public class NinePatch implements Drawable
 		{
 			super(texture, left, top, right, bottom, middleWidth, middleHeight);
 			this.component = component;
-			this.component.addListener(this);
+			this.component.getEventBus().register(this);
 		}
 
-		@Override
-		public void onEnabled(WidgetEvent event){}
-
-		@Override
-		public void onDisabled(WidgetEvent event){}
-
-		@Override
+		@Subscribe
 		public void onResize(WidgetResizeEvent event)
 		{
 			setSize(component.getSize());

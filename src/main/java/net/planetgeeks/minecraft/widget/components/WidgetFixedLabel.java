@@ -3,7 +3,7 @@ package net.planetgeeks.minecraft.widget.components;
 import lombok.Getter;
 import lombok.NonNull;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
-import net.planetgeeks.minecraft.widget.interactive.WidgetStatusAdapter;
+import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
 
 public class WidgetFixedLabel extends WidgetLabel
@@ -11,7 +11,7 @@ public class WidgetFixedLabel extends WidgetLabel
 	@Getter
 	private int offset = 0;
 	private String fixedText = "";
-	
+
 	public WidgetFixedLabel(int width)
 	{
 		this(0, 0, width, "");
@@ -21,16 +21,16 @@ public class WidgetFixedLabel extends WidgetLabel
 	{
 		this(xPosition, yPosition, width, "");
 	}
-	
+
 	public WidgetFixedLabel(int xPosition, int yPosition, int width, String text)
 	{
 		super(text, xPosition, yPosition);
-		addListener(new WidgetStatusAdapter()
+		getEventBus().register(new WidgetResizeListener()
 		{
 			@Override
-			public void onResize(WidgetResizeEvent event)
+			public void onComponentResized(WidgetResizeEvent event)
 			{
-				if(getText() != null)
+				if (getText() != null)
 					updateFixedText();
 			}
 		});
@@ -86,7 +86,7 @@ public class WidgetFixedLabel extends WidgetLabel
 
 		return text;
 	}
-	
+
 	private String getOffsetText(@NonNull String text, @NonNull WidgetRenderer renderer)
 	{
 		return text.substring(getOffset());

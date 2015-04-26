@@ -19,8 +19,6 @@ public class WidgetFramework
      * - TextField - add text alignment support. 
      * 
      * FUTURE FEATURES:
-     * 
-     * - Layout system - changes children position and size according to parent changes. 
      * - Advanced logger system.
      * 
      * FUTURE COMPONENTS:

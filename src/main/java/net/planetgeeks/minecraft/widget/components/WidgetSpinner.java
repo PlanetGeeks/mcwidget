@@ -9,11 +9,13 @@ import java.util.regex.Pattern;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.planetgeeks.minecraft.widget.adapters.WidgetMouseAdapter;
-import net.planetgeeks.minecraft.widget.events.WidgetMouseEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent.WidgetMousePressListener;
+import net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent.WidgetMouseReleaseListener;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
 import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
-import net.planetgeeks.minecraft.widget.interactive.WidgetStatusAdapter;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
 import net.planetgeeks.minecraft.widget.layout.Direction;
 import net.planetgeeks.minecraft.widget.render.NinePatch;
@@ -44,10 +46,10 @@ public class WidgetSpinner extends WidgetInteractive
 	{
 		super(width, height);
 
-		addListener(new WidgetStatusAdapter()
+		getEventBus().register(new WidgetResizeListener()
 		{
 			@Override
-			public void onResize(WidgetResizeEvent event)
+			public void onComponentResized(WidgetResizeEvent event)
 			{
 				if (inputField != null)
 					inputField.setWidth(getWidth() - 13);
@@ -129,55 +131,8 @@ public class WidgetSpinner extends WidgetInteractive
 			ninePatches[ENABLED] = new NinePatch.Dynamic(this, TEXTURE.split(0, 9, 13, 7), 1, 1, 1, 1);
 			ninePatches[HOVERED] = new NinePatch.Dynamic(this, TEXTURE.split(13, 9, 13, 7), 1, 1, 1, 1);
 			ninePatches[PRESSED] = new NinePatch.Dynamic(this, TEXTURE.split(26, 9, 13, 7), 1, 1, 1, 1);		
-
-			addListener(new WidgetMouseAdapter()
-			{
-				private long latestUpdate = 0L;
-
-				@Override
-				public void onMousePressed(WidgetMouseEvent event)
-				{
-					if (!event.isLeftButton())
-						return;
-
-					float delay = getIncrementDelay();
-					int increment = 1;
-
-					if (delay > 0 && System.currentTimeMillis() - latestUpdate <= delay)
-						return;
-					else if (delay > 0)
-					{
-						increment = (int) ((System.currentTimeMillis() - latestUpdate) / delay);
-					}
-
-					int current = getValue();
-
-					if (direction == UP)
-					{
-						if (current + increment <= maximumValue)
-							setValue(current + increment);
-						else
-							setValue(maximumValue);
-					}
-					else
-					{
-						if (current - increment >= minimumValue)
-							setValue(current - increment);
-						else
-							setValue(minimumValue);
-					}
-
-					latestUpdate = System.currentTimeMillis();
-				}
-
-				@Override
-				public void onMouseReleased(WidgetMouseEvent event)
-				{
-					if (event.isLeftButton())
-						latestClick = -1L;
-				}
-			});
 			
+			getEventBus().register(new ArrowButtonHandler());		
 			setMinimumSize(new Dimension(2, 2));
 			setDirection(direction);
 		}
@@ -185,6 +140,54 @@ public class WidgetSpinner extends WidgetInteractive
 		public ArrowButton(Direction direction, int width, int height)
 		{
 			this(direction, 0, 0, width, height);
+		}
+		
+		protected class ArrowButtonHandler implements WidgetMousePressListener, WidgetMouseReleaseListener
+		{
+			private long latestUpdate = 0L;
+			
+			@Override
+			public void onMousePressed(WidgetMousePressEvent event)
+			{
+				if (!event.isLeftButton())
+					return;
+
+				float delay = getIncrementDelay();
+				int increment = 1;
+
+				if (delay > 0 && System.currentTimeMillis() - latestUpdate <= delay)
+					return;
+				else if (delay > 0)
+				{
+					increment = (int) ((System.currentTimeMillis() - latestUpdate) / delay);
+				}
+
+				int current = getValue();
+
+				if (direction == UP)
+				{
+					if (current + increment <= maximumValue)
+						setValue(current + increment);
+					else
+						setValue(maximumValue);
+				}
+				else
+				{
+					if (current - increment >= minimumValue)
+						setValue(current - increment);
+					else
+						setValue(minimumValue);
+				}
+
+				latestUpdate = System.currentTimeMillis();
+			}
+
+			@Override
+			public void onMouseReleased(WidgetMouseReleaseEvent event)
+			{
+				if (event.isLeftButton())
+					latestClick = -1L;
+			}
 		}
 
 		public void setDirection(Direction direction)

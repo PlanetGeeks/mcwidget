@@ -3,19 +3,35 @@ package net.planetgeeks.minecraft.widget.interactive;
 import static net.planetgeeks.minecraft.widget.interactive.WidgetFocusable.FocusPolicy.CLICK_COMPONENT;
 import static net.planetgeeks.minecraft.widget.interactive.WidgetFocusable.FocusPolicy.CLICK_COMPONENT_OR_CHILD;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
-import net.planetgeeks.minecraft.widget.adapters.WidgetMouseAdapter;
-import net.planetgeeks.minecraft.widget.events.WidgetMouseEvent.WidgetMouseClickOutsideEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetMouseEvent.WidgetMousePressEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetFocusGainEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetFocusLoseEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressOutsideEvent;
 import net.planetgeeks.minecraft.widget.util.Focusable;
 
-public abstract class WidgetFocusable extends WidgetInteractive implements
-		Focusable
+import com.google.common.eventbus.Subscribe;
+
+/**
+ * Represents an interactive widget ({@link WidgetInteractive}) that can gain and lose focus (e.g. gain focus by clicking on it).
+ * <p>
+ * Focus policy can be set by using {@link #setFocusPolicy(FocusPolicy)}. 
+ * <p>
+ * <b>Complete list of supported events.</b>
+ * <ul>
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetFocusEvent WidgetFocusEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetFocusGainEvent WidgetFocusGainEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetFocusLoseEvent WidgetFocusLoseEvent}
+ * </ul>
+ * 
+ * @author Vincenzo Fortunato - (Flood)
+ */
+public abstract class WidgetFocusable extends WidgetInteractive implements Focusable
 {
 	@Setter
 	private boolean canLoseFocus = true;
 	@Getter
-	@Setter
 	private boolean focused = false;
 	private FocusPolicy focusPolicy = CLICK_COMPONENT_OR_CHILD;
 
@@ -27,25 +43,41 @@ public abstract class WidgetFocusable extends WidgetInteractive implements
 	public WidgetFocusable(int xPosition, int yPosition, int width, int height)
 	{
 		super(xPosition, yPosition, width, height);
-		final WidgetFocusable focusable = this;
-		this.addListener(new WidgetMouseAdapter()
+
+		class FocusableHandler
 		{
-			@Override
-			public void onMouseClickedOutside(WidgetMouseClickOutsideEvent event)
+			private final WidgetFocusable focusable;
+			
+			public FocusableHandler(WidgetFocusable focusable)
+			{
+				this.focusable = focusable;
+			}
+			
+			@Subscribe
+			public void onEvent(WidgetMousePressOutsideEvent event)
 			{
 				if (event.isLeftButton() && canLoseFocus())
 				{
 					setFocused(false);
 				}
 			}
-
-			@Override
-			public void onMousePressed(WidgetMousePressEvent event)
+			
+			@Subscribe
+			public void onEvent(WidgetMousePressEvent event)
 			{
 				if (event.isLeftButton())
 					setFocused(focusPolicy == CLICK_COMPONENT ? event.getComponent() == focusable : true);
 			}
-		});
+		}
+		
+		this.getEventBus().register(new FocusableHandler(this));
+	}
+
+	@Override
+	public void setFocused(boolean focused)
+	{
+		if (this.focused != focused)
+			this.getEventBus().post((this.focused = focused) ? new WidgetFocusGainEvent(this) : new WidgetFocusLoseEvent(this));
 	}
 
 	@Override
@@ -53,7 +85,27 @@ public abstract class WidgetFocusable extends WidgetInteractive implements
 	{
 		return canLoseFocus;
 	}
-
+	
+	/**
+	 * Set the focus gain/lose policy.
+	 * 
+	 * @param focusPolicy - the policy to set.
+	 */
+	public void setFocusPolicy(@NonNull FocusPolicy focusPolicy)
+	{
+		this.focusPolicy = focusPolicy;
+	}
+	
+	/**
+	 * Get the set focus gain/lose policy.
+	 * 
+	 * @return the set policy.
+	 */
+	public FocusPolicy getFocusPolicy()
+	{
+		return focusPolicy;
+	}
+	
 	public static enum FocusPolicy
 	{
 		/**

@@ -1,32 +1,44 @@
 package net.planetgeeks.minecraft.widget;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent.WidgetHideEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent.WidgetMoveEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent.WidgetResizeEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent.WidgetShowEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetHideEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMoveEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetShowEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetUpdateEvent;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
 import net.planetgeeks.minecraft.widget.layout.Layout;
-import net.planetgeeks.minecraft.widget.listeners.WidgetComponentListener;
-import net.planetgeeks.minecraft.widget.listeners.WidgetListener;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
 import net.planetgeeks.minecraft.widget.util.Drawable;
 import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.Visible;
-import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
+import com.google.common.eventbus.EventBus;
+
+/**
+ * Represents an object that is renderered onto the screen.
+ * <p>
+ * The component can be moved, resized, shown and hidden. It can also have
+ * children components that will be renderered on the component itself.
+ * 
+ * <p>
+ * <b>Complete list of supported events.</b>
+ * <ul>
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetUpdateEvent WidgetUpdateEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetShowEvent WidgetShowEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetHideEvent WidgetHideEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetResizeEvent WidgetResizeEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMoveEvent WidgetMoveEvent}
+ * </ul>
+ * 
+ * @author Vincenzo Fortunato (Flood)
+ */
 public abstract class Widget extends Gui implements Drawable, Visible
 {
 	public Minecraft mc;
@@ -43,10 +55,8 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	@Getter
 	private WidgetRenderer renderer;
 	@Getter
-	@Setter
 	private Layout layout = null;
-	@Getter(AccessLevel.PROTECTED)
-	private ListenerRegistry listenerRegistry = new ListenerRegistry();
+	private final EventBus eventBus = new EventBus();
 
 	/**
 	 * Creates a new instance of Widget.
@@ -58,28 +68,10 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 */
 	public Widget(int xPosition, int yPosition, int width, int height)
 	{
-		setPosition(new Point(width, height));
+		setPosition(new Point(xPosition, yPosition));
 		setSize(new Dimension(width, height));
 		this.mc = Minecraft.getMinecraft();
 		this.renderer = new WidgetRenderer(this);
-		this.listenerRegistry.registerHandler(new ListenerHandler<WidgetComponentListener>(WidgetComponentListener.class)
-		{
-			@Override
-			public void handle(WidgetComponentListener listener, WidgetEvent event)
-			{
-				if (event instanceof WidgetShowEvent)
-					listener.onComponentShown((WidgetShowEvent) event);
-				
-				else if (event instanceof WidgetHideEvent)
-					listener.onComponentHidden((WidgetHideEvent) event);
-				
-				else if (event instanceof WidgetMoveEvent)
-					listener.onComponentMoved((WidgetMoveEvent) event);
-				
-				else if (event instanceof WidgetResizeEvent	)
-					listener.onComponentResized((WidgetResizeEvent) event);
-			}
-		});
 	}
 
 	/**
@@ -96,6 +88,19 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	}
 
 	/**
+	 * Set layout.
+	 * 
+	 * @param layout - the layout to set.
+	 */
+	public void setLayout(Layout layout)
+	{
+		if(this.layout != null)
+			this.layout.unlink();
+		
+		this.layout = layout.link(this);
+	}
+	
+	/**
 	 * Add the given component to the child list.
 	 * <p>
 	 * The given component mustn't already have a parent.
@@ -108,7 +113,10 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	public boolean add(@NonNull Widget childComponent)
 	{
 		if (childComponent.getParent() != null)
-			throw new IllegalArgumentException("The given component already has a parent!");
+			if(childComponent.getParent() != this)
+				throw new IllegalArgumentException("The given component already has a parent!");
+			else
+				return true;
 
 		if (childComponent.isParentOf(this))
 			throw new IllegalArgumentException("The given component is parent of this!");
@@ -145,33 +153,6 @@ public abstract class Widget extends Gui implements Drawable, Visible
 		}
 	}
 
-	public boolean addListener(WidgetListener listener)
-	{
-		if (listener == null)
-		{
-			WidgetUtil.warn("Attempting to register a null listener. Registration aborted!");
-			return false;
-		}
-
-		if (!listenerRegistry.addListener(listener))
-		{
-			WidgetUtil.warn("Unsupported listener! It has not been registered!");
-			return false;
-		}
-
-		return true;
-	}
-
-	public boolean removeListener(WidgetComponentListener listener)
-	{
-		return listener == null ? false : listenerRegistry.removeListener(listener);
-	}
-
-	public boolean hasListener(WidgetComponentListener listener)
-	{
-		return listener == null ? false : listenerRegistry.hasListener(listener);
-	}
-
 	/**
 	 * Set component position.
 	 * 
@@ -181,10 +162,8 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	public void setPosition(@NonNull Point position)
 	{
 		Point latest = this.position.clone();
-
 		this.position.moveTo(position);
-
-		listenerRegistry.invokeListeners(WidgetComponentListener.class, new WidgetMoveEvent(this, latest));
+		this.eventBus.post(new WidgetMoveEvent(this, latest));
 	}
 
 	public Point getPosition()
@@ -293,7 +272,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 		if (getSize().compareHeight(maximumSize) > 0)
 			getSize().setHeight(getMaximumSize().getHeight());
 
-		listenerRegistry.invokeListeners(WidgetComponentListener.class, new WidgetResizeEvent(this, latest));
+		this.eventBus.post(new WidgetResizeEvent(this, latest));
 	}
 
 	/**
@@ -343,8 +322,15 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	/**
 	 * Called by the parent component to update the widget.
 	 */
-	public void onUpdate()
+	protected void onUpdate()
 	{
+		synchronized (children)
+		{
+			for (Widget component : children)
+				component.onUpdate();
+		}
+
+		getEventBus().post(new WidgetUpdateEvent(this));
 	}
 
 	@Override
@@ -377,14 +363,29 @@ public abstract class Widget extends Gui implements Drawable, Visible
 
 	public void mouseClicked(int mouseX, int mouseY, int mouseButton)
 	{
+		synchronized (children)
+		{
+			for (Widget component : children)
+				component.mouseClicked(mouseX, mouseY, mouseButton);
+		}
 	}
 
 	public void mouseReleased(int mouseX, int mouseY, int mouseButton)
 	{
+		synchronized (children)
+		{
+			for (Widget component : children)
+				component.mouseReleased(mouseX, mouseY, mouseButton);
+		}
 	}
 
 	public void keyTyped(char typedChar, int keyCode)
 	{
+		synchronized (children)
+		{
+			for (Widget component : children)
+				component.keyTyped(typedChar, keyCode);
+		}
 	}
 
 	/**
@@ -413,12 +414,12 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 * An non-visible component will not be draw and will not react to
 	 * mouse/keyboard events.
 	 * 
-	 * @return the visibility set .
+	 * @return the visibility set.
 	 */
 	@Override
 	public boolean isVisible()
 	{
-		return parent != null ? parent.isVisible() : visible;
+		return (parent != null ? parent.isVisible() : true) && visible;
 	}
 
 	/**
@@ -431,8 +432,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	public void setVisible(boolean visible)
 	{
 		this.visible = visible;
-
-		listenerRegistry.invokeListeners(WidgetComponentListener.class, visible ? new WidgetShowEvent(this) : new WidgetHideEvent(this));
+		this.eventBus.post(visible ? new WidgetShowEvent(this) : new WidgetHideEvent(this));
 	}
 
 	/**
@@ -443,6 +443,21 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	public Widget getParent()
 	{
 		return this.parent;
+	}
+
+	/**
+	 * The Widget personal EventBus.
+	 * <p>
+	 * This is used by the Widget to call events located into
+	 * net.planetgeeks.minecraft.widget.events package. Can be also used to
+	 * register event handler. The event handler will receive events triggered
+	 * by this Widget only.
+	 * 
+	 * @return the Widget personal EventBus.
+	 */
+	public EventBus getEventBus()
+	{
+		return eventBus;
 	}
 
 	public void setZLevel(float zLevel)
@@ -457,12 +472,12 @@ public abstract class Widget extends Gui implements Drawable, Visible
 
 	public int getXOnScreen()
 	{
-		return this.parent != null ? parent.getXOnScreen() + getX() : getY();
+		return (this.parent != null ? parent.getXOnScreen() : 0) + getX();
 	}
 
 	public int getYOnScreen()
 	{
-		return this.parent != null ? parent.getYOnScreen() + getX() : getY();
+		return (this.parent != null ? parent.getYOnScreen() : 0) + getY();
 	}
 
 	@Override
@@ -481,126 +496,5 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	public void drawVerticalLine(int y1, int y2, int x, int color)
 	{
 		super.drawVerticalLine(x, y1, y2, color);
-	}
-
-	protected class ListenerRegistry
-	{
-		private HashMap<Class<? extends WidgetListener>, ListenerHandler<?>> handlers = new HashMap<>();
-
-		public <T extends WidgetListener> void registerHandler(@NonNull ListenerHandler<T> handler)
-		{
-			synchronized (handlers)
-			{
-				handlers.put(handler.getType(), handler);
-			}
-		}
-
-		public boolean addListener(@NonNull WidgetListener listener)
-		{
-			boolean added = false;
-
-			synchronized (handlers)
-			{
-				for (Map.Entry<Class<? extends WidgetListener>, ListenerHandler<?>> entry : handlers.entrySet())
-				{
-					if (entry.getKey().isInstance(listener))
-						added = entry.getValue().addListener(listener) ? true : added;
-				}
-			}
-
-			return true;
-		}
-
-		public boolean removeListener(@NonNull Object listener)
-		{
-			boolean removed = false;
-
-			synchronized (handlers)
-			{
-				for (Map.Entry<Class<? extends WidgetListener>, ListenerHandler<?>> entry : handlers.entrySet())
-				{
-					if (entry.getKey().isInstance(listener))
-						removed = entry.getValue().removeListener(listener) ? true : removed;
-				}
-			}
-
-			return removed;
-		}
-
-		public boolean hasListener(@NonNull Object listener)
-		{
-			synchronized (handlers)
-			{
-				for (Map.Entry<Class<? extends WidgetListener>, ListenerHandler<?>> entry : handlers.entrySet())
-				{
-					if (entry.getKey().isInstance(listener) && entry.getValue().hasListener(listener))
-						return true;
-				}
-			}
-
-			return false;
-		}
-
-		public void invokeListeners(@NonNull Class<? extends WidgetListener> type, WidgetEvent event)
-		{
-			synchronized (handlers)
-			{
-				ListenerHandler<?> handler = handlers.get(type);
-
-				if (handler != null)
-					handler.invokeListeners(event);
-			}
-		}
-	}
-
-	protected static abstract class ListenerHandler<T extends WidgetListener>
-	{
-		@Getter
-		private Set<T> listeners = new LinkedHashSet<>();
-		@Getter
-		private Class<T> type;
-
-		public ListenerHandler(@NonNull Class<T> type)
-		{
-			this.type = type;
-		}
-
-		public void invokeListeners(WidgetEvent event)
-		{
-			synchronized (listeners)
-			{
-				for (T listener : listeners)
-					handle(listener, event);
-			}
-		}
-
-		public abstract void handle(T listener, WidgetEvent event);
- 
-		public boolean addListener(@NonNull WidgetListener listener)
-		{
-			if (!type.isInstance(listener))
-				return false;
-
-			synchronized (listeners)
-			{
-				return listeners.add(type.cast(listener));
-			}
-		}
-
-		public boolean removeListener(@NonNull Object listener)
-		{
-			synchronized (listeners)
-			{
-				return listeners.remove(listener);
-			}
-		}
-
-		public boolean hasListener(@NonNull Object listener)
-		{
-			synchronized (listeners)
-			{
-				return listeners.contains(listener);
-			}
-		}
 	}
 }

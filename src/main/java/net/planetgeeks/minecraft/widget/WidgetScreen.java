@@ -9,12 +9,13 @@ import net.planetgeeks.minecraft.widget.components.WidgetPanel;
 import net.planetgeeks.minecraft.widget.util.Screen;
 import net.planetgeeks.minecraft.widget.util.WidgetParent;
 
-public abstract class WidgetScreen extends GuiScreen implements Screen, WidgetParent
+public abstract class WidgetScreen extends GuiScreen implements Screen,
+		WidgetParent
 {
 	@Getter
 	private WidgetScreenPanel<WidgetScreen> contentPanel = new WidgetScreenPanel<>(this);
 	private boolean initialized = false;
-	
+
 	@Override
 	public final void initGui()
 	{
@@ -136,6 +137,12 @@ public abstract class WidgetScreen extends GuiScreen implements Screen, WidgetPa
 		{
 			this.setWidth(screen.width);
 			this.setHeight(screen.height);
+		}
+
+		@Override
+		public void onUpdate()
+		{
+			super.onUpdate();
 		}
 	}
 }

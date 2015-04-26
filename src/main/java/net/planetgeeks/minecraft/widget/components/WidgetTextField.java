@@ -6,15 +6,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.util.ChatAllowedCharacters;
-import net.planetgeeks.minecraft.widget.adapters.WidgetMouseAdapter;
-import net.planetgeeks.minecraft.widget.events.WidgetEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetKeyEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetMouseEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetMouseEvent.WidgetMousePressEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetKeyTypeEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetKeyTypeEvent.WidgetKeyTypeListener;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent.WidgetMousePressListener;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
 import net.planetgeeks.minecraft.widget.interactive.WidgetFocusable;
-import net.planetgeeks.minecraft.widget.listeners.WidgetChangeListener;
-import net.planetgeeks.minecraft.widget.listeners.WidgetKeyListener;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
 import net.planetgeeks.minecraft.widget.util.Drawable;
 import net.planetgeeks.minecraft.widget.util.TextContent;
@@ -62,14 +61,14 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 	public WidgetTextField(int xPosition, int yPosition, int width, int height, String text)
 	{
 		super(xPosition, yPosition, width, height);
-		addListener(new ActionAdapter());
+		getEventBus().register(new WidgetTextFieldHandler());
 		add(label = new WidgetFixedLabel(getWidth()));
 		setHeight(getHeight());
 		setText(text);
 		Keyboard.enableRepeatEvents(true);
 	}
 
-	class ActionAdapter extends WidgetMouseAdapter implements WidgetKeyListener, WidgetChangeListener
+	protected class WidgetTextFieldHandler implements WidgetMousePressListener, WidgetKeyTypeListener, WidgetResizeListener
 	{
 		private long latestClick = 0L;
 
@@ -96,8 +95,7 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 			}
 		}
 
-		@Override
-		public void onMousePressed(WidgetMouseEvent event) //REPLACE WITH onComponentUpdate and check if it's pressed.
+		public void onMousePressed1(WidgetMousePressEvent event) //REPLACE WITH onComponentUpdate and check if it's pressed. Continuosly pressed it's the meaning.
 		{
 			if (event.isLeftButton() && event.getComponent() == label)
 			{
@@ -142,7 +140,7 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 		}
 
 		@Override
-		public void onKeyTyped(WidgetKeyEvent event)
+		public void onKeyTyped(WidgetKeyTypeEvent event)
 		{
 			if (!isEnabled() || !isFocused())
 				return;
@@ -265,15 +263,9 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 					break;
 			}
 		}
-
+		
 		@Override
-		public void onEnabled(WidgetEvent event){}
-
-		@Override
-		public void onDisabled(WidgetEvent event){}
-
-		@Override
-		public void onResize(WidgetResizeEvent component)
+		public void onComponentResized(WidgetResizeEvent component)
 		{
 			if (label != null)
 			{

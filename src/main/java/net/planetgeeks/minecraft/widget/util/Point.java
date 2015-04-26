@@ -1,9 +1,11 @@
 package net.planetgeeks.minecraft.widget.util;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+@EqualsAndHashCode
 public class Point implements Cloneable
 {
 	@Getter @Setter

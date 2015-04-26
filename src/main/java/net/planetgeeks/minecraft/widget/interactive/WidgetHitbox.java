@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.planetgeeks.minecraft.widget.Widget;
+import net.planetgeeks.minecraft.widget.util.Point;
 
 @Getter
 @Setter
@@ -21,17 +22,28 @@ public class WidgetHitbox
 	}
 
 	/**
-	 * Check if the point on the screen with the given coordinates is inside
-	 * this HitBox.
+	 * Wrapper method of {@link #isPointInside(Point)}.
+	 * 
+	 * @param x - the x coordinate on the screen.
+	 * @param y - the y coordinate on the screen.
+	 * @return true if the point is inside the Hitbox.
+	 */
+	public boolean isPointInside(int x, int y)
+	{
+		return isPointInside(new Point(x, y));
+	}
+
+	/**
+	 * Check if the given point on the screen is inside this HitBox.
 	 * 
 	 * @param x - the x coordinate on the screen.
 	 * @param y - the y coordinate on the screen.
 	 * 
 	 * @return true if the point is inside the HitBox.
 	 */
-	public boolean isPointInside(int x, int y)
+	public boolean isPointInside(Point point)
 	{
-		return x >= component.getXOnScreen() && x < component.getXOnScreen() + getWidth() && y >= component.getYOnScreen() && y < component.getYOnScreen() + getHeight();
+		return point.getX() >= component.getXOnScreen() && point.getX() < component.getXOnScreen() + getWidth() && point.getY() >= component.getYOnScreen() && point.getY() < component.getYOnScreen() + getHeight();
 	}
 
 	public static class Dynamic extends WidgetHitbox

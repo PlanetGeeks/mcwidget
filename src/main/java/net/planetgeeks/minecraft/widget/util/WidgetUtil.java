@@ -107,6 +107,18 @@ public class WidgetUtil
 		return scaledHeight - Mouse.getY() * scaledHeight / mc.displayHeight - 1;
 	}
 
+	/**
+	 * Get mouse position on screen.
+	 * <p>
+	 * Supports minecraft's scaled resolution.
+	 * 
+	 * @return a Point object that represents mouse position on screen.
+	 */
+	public static Point getMousePosition()
+	{
+		return new Point(getMouseX(), getMouseY());
+	}
+	
 	public static String getStringFromClipboard()
 	{
 		Transferable transferable = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);

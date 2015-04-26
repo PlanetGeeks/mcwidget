@@ -3,17 +3,14 @@ package net.planetgeeks.minecraft.widget.util;
 public interface Focusable
 {
 	/**
-	 * if true the component can lose focus by clicking elsewhere on the screen
-	 * 
-	 * @return boolean
+	 * @return true if the component can lose focus by clicking elsewhere on the
+	 *         screen.
 	 */
 	boolean canLoseFocus();
 
 	/**
-	 * Set true if you want the component to lose focus by clicking elsewhere on
-	 * the screen
-	 * 
-	 * @param canLoseFocus boolean
+	 * @param canLoseFocus - true if you want the component to lose focus by
+	 *            clicking elsewhere on the screen.
 	 */
 	void setCanLoseFocus(boolean canLoseFocus);
 
