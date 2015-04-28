@@ -13,7 +13,7 @@ import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetShowEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetUpdateEvent;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
-import net.planetgeeks.minecraft.widget.layout.Layout;
+import net.planetgeeks.minecraft.widget.layout.WidgetLayout;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
 import net.planetgeeks.minecraft.widget.util.Drawable;
 import net.planetgeeks.minecraft.widget.util.Point;
@@ -55,7 +55,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	@Getter
 	private WidgetRenderer renderer;
 	@Getter
-	private Layout layout = null;
+	private WidgetLayout layout = null;
 	private final EventBus eventBus = new EventBus();
 
 	/**
@@ -92,7 +92,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 * 
 	 * @param layout - the layout to set.
 	 */
-	public void setLayout(Layout layout)
+	public void setLayout(WidgetLayout layout)
 	{
 		if(this.layout != null)
 			this.layout.unlink();
@@ -232,8 +232,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 */
 	public void setMaximumSize(@NonNull Dimension maximumSize)
 	{
-		this.maximumSize = maximumSize;
-		setSize(getSize());
+		setMinimumAndMaximumSize(this.minimumSize, maximumSize);
 	}
 
 	/**
@@ -243,16 +242,69 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 */
 	public void setMinimumSize(@NonNull Dimension minimumSize)
 	{
-		this.minimumSize = minimumSize;
-		setSize(getSize());
+		setMinimumAndMaximumSize(minimumSize, this.maximumSize);
 	}
 
+	/**
+	 * Wrapper method of {@link #setMinimumSize(Dimension)}.
+	 * 
+	 * @param minimumWidth - to set.
+	 */
+	public void setMinimumWidth(int minimumWidth)
+	{
+		setMinimumSize(new Dimension(minimumWidth, this.minimumSize.getHeight()));
+	}
+	
+	/**
+	 * Wrapper method of {@link #setMinimumSize(Dimension)}.
+	 * 
+	 * @param minimumHeight - to set.
+	 */
+	public void setMinimumHeight(int minimumHeight)
+	{
+		setMinimumSize(new Dimension(this.minimumSize.getWidth(), minimumHeight));
+	}
+	
+	/**
+	 * Wrapper method of {@link #setMaximumSize(Dimension)}.
+	 * 
+	 * @param maximumWidth - to set.
+	 */
+	public void setMaximumWidth(int maximumWidth)
+	{
+		setMaximumSize(new Dimension(maximumWidth, this.maximumSize.getHeight()));
+	}
+	
+	/**
+	 * Wrapper method of {@link #setMaximumSize(Dimension)}.
+	 * 
+	 * @param maximumHeight - to set.
+	 */
+	public void setMaximumHeight(int maximumHeight)
+	{
+		setMaximumSize(new Dimension(this.maximumSize.getWidth(), maximumHeight));
+	}
+	
+	/**
+	 * Set minimum and maximum sizes and resize the component if it's needed.
+	 * 
+	 * @param minimumSize - to set.
+	 * @param maximumSize - to set.
+	 */
+	public void setMinimumAndMaximumSize(Dimension minimumSize, Dimension maximumSize)
+	{
+		this.minimumSize = minimumSize;
+		this.maximumSize = maximumSize;
+		setSize(getSize());
+	}
+	
 	/**
 	 * Set components's size.
 	 * 
 	 * @param size - the size to set.
+	 * @return effective size set.
 	 */
-	public void setSize(@NonNull Dimension size)
+	public Dimension setSize(@NonNull Dimension size)
 	{
 		Dimension latest = getSize().clone();
 
@@ -273,6 +325,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 			getSize().setHeight(getMaximumSize().getHeight());
 
 		this.eventBus.post(new WidgetResizeEvent(this, latest));
+		return getSize();
 	}
 
 	/**
@@ -291,10 +344,11 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 * Wrapper method of {@link #setSize(Dimension)}.
 	 * 
 	 * @param width - the width to set.
+	 * @return effective width set.
 	 */
-	public void setWidth(int width)
+	public int setWidth(int width)
 	{
-		setSize(new Dimension(width, getSize().getHeight()));
+		return setSize(new Dimension(width, getSize().getHeight())).getWidth();
 	}
 
 	/**
@@ -303,17 +357,28 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	 * Wrapper method of {@link #setSize(Dimension)}.
 	 * 
 	 * @param height - the height to set.
+	 * @return effective height set.
 	 */
-	public void setHeight(int height)
+	public int setHeight(int height)
 	{
-		setSize(new Dimension(getSize().getWidth(), height));
+		return setSize(new Dimension(getSize().getWidth(), height)).getHeight();
 	}
 
+	/**
+	 * Get component's width.
+	 * 
+	 * @return the component width.
+	 */
 	public int getWidth()
 	{
 		return getSize().getWidth();
 	}
 
+	/**
+	 * Get component's height.
+	 * 
+	 * @return the component height.
+	 */
 	public int getHeight()
 	{
 		return getSize().getHeight();

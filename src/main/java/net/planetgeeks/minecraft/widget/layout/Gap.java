@@ -9,19 +9,38 @@ public class Gap
 	@Getter
 	private int maximumSize = Integer.MAX_VALUE;
 	@Getter
-    private int size;
+    private int size = 0;
+	
+	public Gap()
+	{
+		this(0);
+	}
 	
 	public Gap(int size)
 	{
 		setSize(size);
 	}
 	
-	public void setSize(int size)
+	public Gap(int minimumSize, int size, int maximumSize)
+	{
+		this(size);
+		setMinimumSize(minimumSize);
+		setMaximumSize(maximumSize);
+	}
+	
+	/**
+	 * Set gap size.
+	 * 
+	 * @param size - the size to set.
+	 * @return the effective size set.
+	 */
+	public int setSize(int size)
 	{
 		if(size < 0)
 			throw new IllegalArgumentException("Gap size cannot be less than 0!");
 		
 		this.size = size > maximumSize ? maximumSize : (size < minimumSize ? minimumSize : size);
+		return this.size;
 	}
 	
 	public void setMinimumSize(int minimumSize)
