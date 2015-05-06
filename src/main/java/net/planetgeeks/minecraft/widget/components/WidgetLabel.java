@@ -9,6 +9,7 @@ import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
 import net.planetgeeks.minecraft.widget.layout.Alignment;
 import net.planetgeeks.minecraft.widget.layout.SideGap;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
+import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.TextContent;
 
 public class WidgetLabel extends WidgetInteractive implements TextContent
@@ -17,10 +18,12 @@ public class WidgetLabel extends WidgetInteractive implements TextContent
 	private String text;
 	@Getter
 	@Setter
-	private int foregroundColor = 0xffffff;
+	@NonNull
+	private Color foregroundColor = Color.WHITE;
 	@Getter
 	@Setter
-	private int backgroundColor = 0x000000;
+	@NonNull
+	private Color backgroundColor = Color.BLACK;
 	@Getter
 	@Setter
 	private boolean drawBackground = false;
@@ -65,7 +68,7 @@ public class WidgetLabel extends WidgetInteractive implements TextContent
 		if(isBackgroundDrawn())
 		{
 			renderer.setColor(backgroundColor);
-			renderer.drawRect(0, 0, getWidth(), getHeight());
+			renderer.drawFilledRect(0, 0, getWidth(), getHeight());
 		}
 	}
 

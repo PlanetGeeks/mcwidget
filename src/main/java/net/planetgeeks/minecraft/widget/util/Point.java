@@ -1,11 +1,13 @@
 package net.planetgeeks.minecraft.widget.util;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
 @EqualsAndHashCode
+@Data
 public class Point implements Cloneable
 {
 	@Getter @Setter
@@ -48,6 +50,16 @@ public class Point implements Cloneable
 	    this.y = y;
 	    
 	    return this;
+	}
+	
+	public int compareX(@NonNull Point point)
+	{
+		return Integer.valueOf(x).compareTo(point.x);
+	}
+	
+	public int compareY(@NonNull Point point)
+	{
+		return Integer.valueOf(y).compareTo(point.y);
 	}
 	
 	@Override

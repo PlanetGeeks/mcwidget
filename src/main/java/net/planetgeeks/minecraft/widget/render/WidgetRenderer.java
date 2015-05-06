@@ -1,6 +1,5 @@
 package net.planetgeeks.minecraft.widget.render;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +13,9 @@ import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.planetgeeks.minecraft.widget.Widget;
+import net.planetgeeks.minecraft.widget.layout.Dimension;
+import net.planetgeeks.minecraft.widget.render.shape.Rectangle;
+import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
@@ -41,7 +43,49 @@ public class WidgetRenderer
 	}
 
 	/**
-	 * Draw a rectangle area using the set color {@link #getColor()}.
+	 * Draw a filled rectangle area using the set color {@link #getColor()}.
+	 * 
+	 * @param x - the X coordinate.
+	 * @param y - the Y coordinate.
+	 * @param width - the width of the rectangle.
+	 * @param height - the height of the rectangle.
+	 */
+	public void drawFilledRect(int x, int y, int width, int height)
+	{
+		if (width < 0)
+			throw new IllegalArgumentException("Rectangle width cannot be less than 0!");
+		if (height < 0)
+			throw new IllegalArgumentException("Rectangle height cannot be less than 0!");
+
+		if (width == 0 || height == 0)
+			return;
+
+		Point p1 = adjustPosition(x, y);
+		Point p2 = p1.clone().translate(width, height);
+
+		drawFilledRect(new Rectangle(p1, p2));
+	}
+
+	private void drawFilledRect(@NonNull Rectangle rectangle)
+	{
+		Rectangle clipped = getClippedRect(rectangle);
+		
+		//System.out.println(clipped);
+
+		if (clipped != null)
+			Widget.drawRect(clipped.getX(), clipped.getY(), clipped.getX() + clipped.getWidth(), clipped.getY() + clipped.getHeight(), state.color.getHex());
+	}
+
+	private Rectangle getClippedRect(@NonNull Rectangle rectangle)
+	{
+		Rectangle clip = getComponent().getVisibleArea();
+
+		return clip == null ? null : clip.intersect(rectangle);
+	}
+
+	/**
+	 * Draw a rectangle area without filling it. The border will be rendered
+	 * using the set color {@link #getColor()}.
 	 * 
 	 * @param x - the X coordinate.
 	 * @param y - the Y coordinate.
@@ -50,12 +94,10 @@ public class WidgetRenderer
 	 */
 	public void drawRect(int x, int y, int width, int height)
 	{
-		drawRect(adjustPosition(x, y), adjustPosition(x, y).translate(width, height));
-	}
-
-	private void drawRect(Point p1, Point p2)
-	{
-		Widget.drawRect(p1.getX(), p1.getY(), p2.getX(), p2.getY(), new Color(state.color).getRGB());
+		drawHorizontalLine(x, y, width);
+		drawHorizontalLine(x, y + height, width);
+		drawVerticalLine(x, y, height);
+		drawVerticalLine(x + width, y, height);
 	}
 
 	/**
@@ -70,12 +112,12 @@ public class WidgetRenderer
 	public void drawHorizontalLine(int x, int y, int length)
 	{
 		if (length != 0)
-			drawHorizontalLine(adjustPosition(x, y), adjustPosition(x + (length > 0 ? length - 1 : length + 1), y));
-	}
+		{
+			Point p1 = adjustPosition(x, y);
+			Point p2 = p1.clone().translate(length, 1);
 
-	private void drawHorizontalLine(Point startPoint, Point endPoint)
-	{
-		component.drawHorizontalLine(startPoint.getX(), endPoint.getX(), startPoint.getY(), new Color(state.color).getRGB());
+			drawFilledRect(new Rectangle(p1, p2));
+		}
 	}
 
 	/**
@@ -90,12 +132,12 @@ public class WidgetRenderer
 	public void drawVerticalLine(int x, int y, int length)
 	{
 		if (length != 0)
-			drawVerticalLine(adjustPosition(x, y), adjustPosition(x, y + (length > 0 ? length - 1 : length + 1)));
-	}
+		{
+			Point p1 = adjustPosition(x, y);
+			Point p2 = p1.clone().translate(1, length);
 
-	private void drawVerticalLine(Point startPoint, Point endPoint)
-	{
-		component.drawVerticalLine(startPoint.getY(), endPoint.getY(), startPoint.getX(), new Color(state.color).getRGB());
+			drawFilledRect(new Rectangle(p1, p2));
+		}
 	}
 
 	/**
@@ -112,7 +154,12 @@ public class WidgetRenderer
 
 	private void drawString(String text, Point position)
 	{
-		component.drawString(fontRenderer, text, position.getX(), position.getY(), new Color(state.color).getRGB());
+		Rectangle clipped = new Rectangle(position, getStringSize(text)).intersect(getComponent().getVisibleArea());
+		
+		if(clipped != null /** && clipped.getHeight() >= getStringHeight() **/ )
+		{
+			component.drawString(fontRenderer, fontRenderer.trimStringToWidth(text, clipped.getWidth()), position.getX(), position.getY(), state.color.getHex());
+		}
 	}
 
 	/**
@@ -164,7 +211,7 @@ public class WidgetRenderer
 	{
 		bindTextureResource(textureRegion.getResource());
 
-		drawTexturedModalRect(x, y, textureRegion.getRegionWidth(), textureRegion.getRegionHeight(), textureRegion.getTextureX(), textureRegion.getTextureY());
+		drawTexturedModalRect(new Rectangle(adjustPosition(x, y), textureRegion.getSize()), textureRegion.getTextureX(), textureRegion.getTextureY());
 	}
 
 	/**
@@ -181,6 +228,8 @@ public class WidgetRenderer
 	 */
 	public void drawTexture(TextureRegion textureRegion, int x, int y, int widthToFill, int heightToFill)
 	{
+		bindTextureResource(textureRegion.getResource());
+
 		Point position = adjustPosition(x, y);
 
 		int filledWidth = 0;
@@ -194,10 +243,9 @@ public class WidgetRenderer
 			{
 				int nextFillWidth = filledWidth + textureRegion.getRegionWidth() > widthToFill ? widthToFill - filledWidth : textureRegion.getRegionWidth();
 
-				drawTexturedModalRect(position, textureRegion.getTextureX(), textureRegion.getTextureY(), nextFillWidth, nextFillHeight);
+				drawTexturedModalRect(new Rectangle(position, new Dimension(nextFillWidth, nextFillHeight)), textureRegion.getTextureX(), textureRegion.getTextureY());
 				position.translate(nextFillWidth, 0);
 				filledWidth += nextFillWidth;
-
 			}
 
 			position.translate(-filledWidth, nextFillHeight);
@@ -206,18 +254,24 @@ public class WidgetRenderer
 		}
 	}
 
-	private void drawTexturedModalRect(int x, int y, int width, int height, int textureX, int textureY)
+	private void drawTexturedModalRect(@NonNull Rectangle rectangle, int textureX, int textureY)
 	{
-		drawTexturedModalRect(adjustPosition(x, y), textureX, textureY, width, height);
-	}
+		Rectangle clipped = getClippedRect(rectangle);
 
-	private void drawTexturedModalRect(Point position, int textureX, int textureY, int width, int height)
-	{
-		component.drawTexturedModalRect(position.getX(), position.getY(), textureX, textureY, width, height);
+		if (clipped != null)
+		{
+			int x = clipped.getX();
+			int y = clipped.getY();
+			int width = clipped.getWidth();
+			int height = clipped.getHeight();
+			textureX += clipped.getX() - rectangle.getX();
+			textureY += clipped.getY() - rectangle.getY();
+			component.drawTexturedModalRect(x, y, textureX, textureY, width, height);
+		}
 	}
 
 	/**
-	 * Draw an ItemStack at the given position.
+	 * Draws an ItemStack at the given position.
 	 * 
 	 * @param stack - the ItemStack to draw.
 	 * @param x - the X coordinate.
@@ -229,13 +283,13 @@ public class WidgetRenderer
 	}
 
 	/**
-	 * Draw an ItemStack with a custom overlay (where usually is rendered
+	 * Draws an ItemStack with a custom overlay (the overlay rendered is usually the
 	 * ItemStack's size) at the given position.
 	 * 
 	 * @param stack - the ItemStack to draw.
 	 * @param x - the X coordinate.
 	 * @param y - the Y coordinate.
-	 * @param overlayText
+	 * @param overlayText - the custom overlay text.
 	 */
 	public void drawItemStackWithOverlay(ItemStack stack, int x, int y, String overlayText)
 	{
@@ -288,6 +342,11 @@ public class WidgetRenderer
 	{
 		return fontRenderer.FONT_HEIGHT;
 	}
+	
+	private Dimension getStringSize(@NonNull String text)
+	{
+		return new Dimension(getStringWidth(text), getStringHeight());
+	}
 
 	/**
 	 * Translate rendering.
@@ -323,7 +382,7 @@ public class WidgetRenderer
 	 * @param color - an Integer value that represents the color (e.g 0xffffff -
 	 *            white).
 	 */
-	public void setColor(int color)
+	public void setColor(Color color)
 	{
 		state.color = color;
 	}
@@ -334,7 +393,7 @@ public class WidgetRenderer
 	 * 
 	 * @return the set color.
 	 */
-	public int getColor()
+	public Color getColor()
 	{
 		return state.color;
 	}
@@ -376,10 +435,10 @@ public class WidgetRenderer
 
 	class State implements Cloneable
 	{
-		private int color;
+		private Color color;
 		private Point translation;
 
-		public State(Point translation, int color)
+		public State(Point translation, Color color)
 		{
 			this.color = color;
 			this.translation = translation;
@@ -387,13 +446,13 @@ public class WidgetRenderer
 
 		public State()
 		{
-			this(new Point(0, 0), 0xfffff);
+			this(new Point(0, 0), Color.WHITE);
 		}
 
 		@Override
 		public State clone()
 		{
-			return new State(translation.clone(), color);
+			return new State(translation.clone(), color.clone());
 		}
 
 		public void translate(int x, int y)

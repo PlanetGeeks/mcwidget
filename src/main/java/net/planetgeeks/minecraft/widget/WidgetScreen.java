@@ -115,6 +115,13 @@ public abstract class WidgetScreen extends GuiScreen implements Screen,
 		super.keyTyped(typedChar, keyCode);
 		this.contentPanel.keyTyped(typedChar, keyCode);
 	}
+	
+	@Override
+	public void handleMouseInput() throws IOException
+	{
+		super.handleMouseInput();
+		this.contentPanel.handleMouseInput();
+	}
 
 	@Override
 	public void drawScreen(int mouseX, int mouseY, float partialTicks)
@@ -143,6 +150,12 @@ public abstract class WidgetScreen extends GuiScreen implements Screen,
 		public void onUpdate()
 		{
 			super.onUpdate();
+		}
+		
+		@Override
+		public void handleMouseInput()
+		{
+			super.handleMouseInput();
 		}
 	}
 }

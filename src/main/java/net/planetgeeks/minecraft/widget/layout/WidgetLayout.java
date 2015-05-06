@@ -5,6 +5,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.NonNull;
 import net.planetgeeks.minecraft.widget.Widget;
+import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
 
 public abstract class WidgetLayout implements WidgetResizeListener
@@ -14,7 +15,7 @@ public abstract class WidgetLayout implements WidgetResizeListener
 	@Getter
 	private boolean valid = false;
 
-	public void validate()
+	protected void validate()
 	{
 		setValid(true);
 	}
@@ -50,6 +51,7 @@ public abstract class WidgetLayout implements WidgetResizeListener
 		
 		return this;
 	}
+	
 	/**
 	 * Return the complete Set of components added to this layout.
 	 * 
@@ -57,4 +59,12 @@ public abstract class WidgetLayout implements WidgetResizeListener
 	 *         doesn't contain any component.
 	 */
 	public abstract Set<Widget> getAddedComponents();
+	
+	@Override
+	public void onComponentResized(WidgetResizeEvent event)
+	{
+		dispose();
+	}
+	
+	public abstract void dispose();
 }

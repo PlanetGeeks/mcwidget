@@ -3,6 +3,7 @@ package net.planetgeeks.minecraft.widget.render;
 import lombok.Getter;
 import lombok.NonNull;
 import net.minecraft.util.ResourceLocation;
+import net.planetgeeks.minecraft.widget.layout.Dimension;
 
 /**
  */
@@ -69,5 +70,10 @@ public class TextureRegion extends Texture
 	public TextureRegion split(int textureX, int textureY, int regionWidth, int regionHeight)
 	{
 		return new TextureRegion(this, this.textureX + textureX, this.textureY + textureY, regionWidth, regionHeight);
+	}
+	
+	public Dimension getSize()
+	{
+		return new Dimension(getRegionWidth(), getRegionHeight());
 	}
 }

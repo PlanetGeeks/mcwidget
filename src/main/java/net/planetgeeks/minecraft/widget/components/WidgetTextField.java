@@ -15,6 +15,7 @@ import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
 import net.planetgeeks.minecraft.widget.interactive.WidgetFocusable;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
+import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.Drawable;
 import net.planetgeeks.minecraft.widget.util.TextContent;
 import net.planetgeeks.minecraft.widget.util.Visible;
@@ -22,17 +23,21 @@ import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
 import org.lwjgl.input.Keyboard;
 
-public class WidgetTextField extends WidgetFocusable implements TextContent
+public class WidgetTextField extends WidgetFocusable
+		implements TextContent
 {
 	@Getter
 	@Setter
-	private int borderColor = 0xffffff;
+	@NonNull
+	private Color borderColor = Color.WHITE;
 	@Getter
 	@Setter
-	private int backgroundColor = 0x000000;
+	@NonNull
+	private Color backgroundColor = Color.BLACK;
 	@Getter
 	@Setter
-	private int foregroundColor = 0xffffff;
+	@NonNull
+	private Color foregroundColor = Color.WHITE;
 	@Getter
 	private WidgetFixedLabel label;
 	private Cursor cursor = new Cursor();
@@ -68,7 +73,9 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 		Keyboard.enableRepeatEvents(true);
 	}
 
-	protected class WidgetTextFieldHandler implements WidgetMousePressListener, WidgetKeyTypeListener, WidgetResizeListener
+	protected class WidgetTextFieldHandler
+			implements WidgetMousePressListener, WidgetKeyTypeListener,
+			WidgetResizeListener
 	{
 		private long latestClick = 0L;
 
@@ -95,7 +102,15 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 			}
 		}
 
-		public void onMousePressed1(WidgetMousePressEvent event) //REPLACE WITH onComponentUpdate and check if it's pressed. Continuosly pressed it's the meaning.
+		public void onMousePressed1(WidgetMousePressEvent event) // REPLACE WITH
+																	// onComponentUpdate
+																	// and check
+																	// if it's
+																	// pressed.
+																	// Continuosly
+																	// pressed
+																	// it's the
+																	// meaning.
 		{
 			if (event.isLeftButton() && event.getComponent() == label)
 			{
@@ -263,7 +278,7 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 					break;
 			}
 		}
-		
+
 		@Override
 		public void onComponentResized(WidgetResizeEvent component)
 		{
@@ -463,14 +478,14 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 	{
 		return cursor;
 	}
-	
+
 	@Override
 	public void setText(@NonNull String text)
 	{
 		selectAll();
 		insert(text);
 	}
-	
+
 	@Override
 	public String getText()
 	{
@@ -495,7 +510,7 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 	protected void drawBackground(int mouseX, int mouseY, float partialTicks, WidgetRenderer renderer)
 	{
 		renderer.setColor(backgroundColor);
-		renderer.drawRect(0, 0, getWidth(), getHeight());
+		renderer.drawFilledRect(0, 0, getWidth(), getHeight());
 	}
 
 	protected void drawBorder(int mouseX, int mouseY, float partialTicks, WidgetRenderer renderer)
@@ -507,7 +522,8 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 		renderer.drawVerticalLine(getWidth() - 1, 0, getHeight());
 	}
 
-	public class Cursor implements Drawable, Visible
+	public class Cursor
+			implements Drawable, Visible
 	{
 		@Getter
 		private int index = 0;
@@ -519,10 +535,12 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 		private long blinkDelay = 500;
 		@Getter
 		@Setter
-		private int selectColor = 0x91A6C1;
+		@NonNull
+		private Color selectColor = new Color(0x91A6C1);
 		@Getter
 		@Setter
-		private int cursorColor = 0xffffff;
+		@NonNull
+		private Color cursorColor = Color.WHITE;
 
 		/**
 		 * Set cursor position.
@@ -672,9 +690,9 @@ public class WidgetTextField extends WidgetFocusable implements TextContent
 			renderer.setColor(getSelectColor());
 
 			if (cursorX > selectX)
-				renderer.drawRect(selectX, selectY, cursorX - selectX, selectHeight);
+				renderer.drawFilledRect(selectX, selectY, cursorX - selectX, selectHeight);
 			else
-				renderer.drawRect(cursorX, selectY, selectX - cursorX, selectHeight);
+				renderer.drawFilledRect(cursorX, selectY, selectX - cursorX, selectHeight);
 
 			renderer.pop();
 		}

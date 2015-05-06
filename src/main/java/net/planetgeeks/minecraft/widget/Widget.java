@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.renderer.GlStateManager;
 import net.planetgeeks.minecraft.widget.events.WidgetHideEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMoveEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
@@ -15,11 +16,14 @@ import net.planetgeeks.minecraft.widget.events.WidgetUpdateEvent;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
 import net.planetgeeks.minecraft.widget.layout.WidgetLayout;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
+import net.planetgeeks.minecraft.widget.render.shape.Rectangle;
 import net.planetgeeks.minecraft.widget.util.Drawable;
 import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.Visible;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.SubscriberExceptionContext;
+import com.google.common.eventbus.SubscriberExceptionHandler;
 
 /**
  * Represents an object that is renderered onto the screen.
@@ -56,7 +60,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	private WidgetRenderer renderer;
 	@Getter
 	private WidgetLayout layout = null;
-	private final EventBus eventBus = new EventBus();
+	private final EventBus eventBus = createEventBus();
 
 	/**
 	 * Creates a new instance of Widget.
@@ -100,6 +104,18 @@ public abstract class Widget extends Gui implements Drawable, Visible
 		this.layout = layout.link(this);
 	}
 	
+	protected EventBus createEventBus()
+	{
+		return new EventBus(new SubscriberExceptionHandler()
+		{
+			@Override
+			public void handleException(Throwable exception, SubscriberExceptionContext context)
+			{
+				exception.printStackTrace();
+			}
+		});
+	}
+	    
 	/**
 	 * Add the given component to the child list.
 	 * <p>
@@ -412,6 +428,7 @@ public abstract class Widget extends Gui implements Drawable, Visible
 			while (it.hasNext())
 			{
 				Widget widget = it.next();
+				GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 				widget.draw(mouseX, mouseY, partialTicks, widget.getRenderer());
 			}
 		}
@@ -450,6 +467,18 @@ public abstract class Widget extends Gui implements Drawable, Visible
 		{
 			for (Widget component : children)
 				component.keyTyped(typedChar, keyCode);
+		}
+	}
+
+	/**
+	 * Called when an LWJGL mouse input event occurs (e.g. mouse move, wheel, button press ...)
+	 */
+	protected void handleMouseInput()
+	{
+		synchronized(children)
+		{
+			for(Widget component : children)
+				component.handleMouseInput();
 		}
 	}
 
@@ -498,6 +527,23 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	{
 		this.visible = visible;
 		this.eventBus.post(visible ? new WidgetShowEvent(this) : new WidgetHideEvent(this));
+	}
+	
+	/**
+	 * The component visible area.
+	 * <p>
+	 * The position of the area is relative to the screen origin.
+	 * 
+	 * @return the visible area, or null if the component area is not visible.
+	 */
+	public Rectangle getVisibleArea()
+	{
+		if(getWidth() == 0 || getHeight() == 0)
+			return null;
+		
+		Rectangle componentArea = new Rectangle(getXOnScreen(), getYOnScreen(), getWidth(), getHeight());
+		
+		return parent != null ? componentArea.intersect(parent.getVisibleArea()) : componentArea;
 	}
 
 	/**
@@ -549,17 +595,5 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	public void drawGradientRect(int x1, int y1, int x2, int y2, int startColor, int endColor)
 	{
 		super.drawGradientRect(x1, y1, x2, y2, startColor, endColor);
-	}
-
-	@Override
-	public void drawHorizontalLine(int x1, int x2, int y, int color)
-	{
-		super.drawHorizontalLine(x1, x2, y, color);
-	}
-
-	@Override
-	public void drawVerticalLine(int y1, int y2, int x, int color)
-	{
-		super.drawVerticalLine(x, y1, y2, color);
 	}
 }

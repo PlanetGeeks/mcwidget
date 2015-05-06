@@ -1,7 +1,7 @@
 package net.planetgeeks.minecraft.widget.interactive;
 
-import static net.planetgeeks.minecraft.widget.interactive.WidgetFocusable.FocusPolicy.CLICK_COMPONENT;
-import static net.planetgeeks.minecraft.widget.interactive.WidgetFocusable.FocusPolicy.CLICK_COMPONENT_OR_CHILD;
+import static net.planetgeeks.minecraft.widget.interactive.WidgetFocusable.FocusPolicy.PRESS_COMPONENT;
+import static net.planetgeeks.minecraft.widget.interactive.WidgetFocusable.FocusPolicy.PRESS_COMPONENT_OR_CHILD;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -33,7 +33,7 @@ public abstract class WidgetFocusable extends WidgetInteractive implements Focus
 	private boolean canLoseFocus = true;
 	@Getter
 	private boolean focused = false;
-	private FocusPolicy focusPolicy = CLICK_COMPONENT_OR_CHILD;
+	private FocusPolicy focusPolicy = PRESS_COMPONENT_OR_CHILD;
 
 	public WidgetFocusable(int width, int height)
 	{
@@ -66,7 +66,7 @@ public abstract class WidgetFocusable extends WidgetInteractive implements Focus
 			public void onEvent(WidgetMousePressEvent event)
 			{
 				if (event.isLeftButton())
-					setFocused(focusPolicy == CLICK_COMPONENT ? event.getComponent() == focusable : true);
+					setFocused(focusPolicy == PRESS_COMPONENT ? event.getComponent() == focusable : true);
 			}
 		}
 		
@@ -112,10 +112,10 @@ public abstract class WidgetFocusable extends WidgetInteractive implements Focus
 		 * Set component focused when it's clicked or when a child of it is
 		 * clicked.
 		 */
-		CLICK_COMPONENT_OR_CHILD,
+		PRESS_COMPONENT_OR_CHILD,
 		/**
 		 * Set component focused when it's clicked. Ignores clicks on children.
 		 */
-		CLICK_COMPONENT;
+		PRESS_COMPONENT;
 	}
 }

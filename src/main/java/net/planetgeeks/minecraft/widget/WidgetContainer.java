@@ -124,6 +124,13 @@ public abstract class WidgetContainer extends GuiContainer implements Screen, Wi
 	}
 	
 	@Override
+	public void handleMouseInput() throws IOException
+	{
+		super.handleMouseInput();
+		this.contentPanel.handleMouseInput();
+	}
+	
+	@Override
 	protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY)
 	{
 		this.contentPanel.draw(mouseX, mouseY, partialTicks, contentPanel.getRenderer());

@@ -1,12 +1,13 @@
 package net.planetgeeks.minecraft.widget.components;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.util.ResourceLocation;
 import net.planetgeeks.minecraft.widget.events.WidgetActionEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetActionEvent.WidgetActionListener;
 import net.planetgeeks.minecraft.widget.events.WidgetDisableEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetDisableEvent.WidgetDisableListener;
 import net.planetgeeks.minecraft.widget.events.WidgetEnableEvent;
@@ -17,14 +18,16 @@ import net.planetgeeks.minecraft.widget.events.WidgetMouseExitEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMouseExitEvent.WidgetMouseExitListener;
 import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent.WidgetMousePressListener;
-import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
+import net.planetgeeks.minecraft.widget.events.WidgetUpdateEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetUpdateEvent.WidgetUpdateListener;
 import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
 import net.planetgeeks.minecraft.widget.layout.Alignment;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
+import net.planetgeeks.minecraft.widget.layout.WidgetGroupLayout;
 import net.planetgeeks.minecraft.widget.render.NinePatch;
 import net.planetgeeks.minecraft.widget.render.TextureRegion;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
+import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.TextContent;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
@@ -39,14 +42,21 @@ public class WidgetButton extends WidgetInteractive
 	private WidgetFixedLabel label;
 	@Getter
 	@Setter
-	private int hoverForegroundColor = 16777120;
+	@NonNull
+	private Color hoverForegroundColor = new Color(16777120);
 	@Getter
 	@Setter
-	private int disabledForegroundColor = 10526880;
+	@NonNull
+	private Color disabledForegroundColor = new Color(10526880);
 	@Getter
 	@Setter
-	private int foregroundColor = 0xffffff;
+	@NonNull
+	private Color foregroundColor = Color.WHITE;
+	@Getter(AccessLevel.PROTECTED)
+	@Setter(AccessLevel.PROTECTED)
 	private NinePatch[] ninePatches;
+	@Setter
+	private boolean repeatActionEvent = false;
 
 	public WidgetButton(int width, int height)
 	{
@@ -62,15 +72,29 @@ public class WidgetButton extends WidgetInteractive
 	{
 		super(xPosition, yPosition, width, height);
 		getEventBus().register(new WidgetButtonHandler(this));
-		add(label = new WidgetFixedLabel(width));
-		setHeight(getHeight());
+		label = new WidgetFixedLabel(getWidth());
 		label.setText(text);
 		label.setHorizontalAlignment(Alignment.CENTER);
+		init();
+	}
+
+	protected void init()
+	{
+		WidgetGroupLayout layout = new WidgetGroupLayout();
+		layout.setHorizontalGroup(layout.createSequentialGroup().addComponent(label));
+		layout.setVerticalGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup().addComponent(label, Alignment.CENTER)));
+		setLayout(layout);
+		layout.dispose();
 		ninePatches = new NinePatch[3];
 		ninePatches[DISABLED] = new NinePatch.Dynamic(this, TEXTURE.split(0, 0, 200, 20), 2, 2, 2, 3);
 		ninePatches[ENABLED] = new NinePatch.Dynamic(this, TEXTURE.split(0, 20, 200, 20), 2, 2, 2, 3);
 		ninePatches[HOVERED] = new NinePatch.Dynamic(this, TEXTURE.split(0, 40, 200, 20), 2, 2, 2, 3);
 		setMinimumSize(new Dimension(4, 5));
+	}
+	
+	public boolean isRepeatingActionEvent()
+	{
+		return repeatActionEvent;
 	}
 
 	public static void playPressSound(SoundHandler soundHandlerIn)
@@ -101,9 +125,11 @@ public class WidgetButton extends WidgetInteractive
 	protected class WidgetButtonHandler
 			implements WidgetMousePressListener, WidgetMouseEnterListener,
 			WidgetMouseExitListener, WidgetEnableListener,
-			WidgetDisableListener, WidgetActionListener, WidgetResizeListener
+			WidgetDisableListener, WidgetUpdateListener
 	{
 		private final WidgetButton button;
+		private long latestActionEvent = 0L;
+		private boolean firstRepeat = false;
 
 		public WidgetButtonHandler(WidgetButton button)
 		{
@@ -115,7 +141,10 @@ public class WidgetButton extends WidgetInteractive
 		{
 			if (isEnabled() && event.isLeftButton() && (event.getComponent() == button || isParentOf(event.getComponent())))
 			{
-				getEventBus().post(new WidgetActionEvent(button, PRESS_ACTION));
+				firstRepeat = true;
+				latestActionEvent = System.currentTimeMillis();
+				playPressSound(WidgetUtil.getSoundHandler());
+				fireAction();
 			}
 		}
 
@@ -162,21 +191,24 @@ public class WidgetButton extends WidgetInteractive
 		{
 			label.setForegroundColor(getDisabledForegroundColor());
 		}
-
+		
 		@Override
-		public void onAction(WidgetActionEvent event)
+		public void onComponentUpdated(WidgetUpdateEvent event)
 		{
-			playPressSound(WidgetUtil.getSoundHandler());
-		}
-
-		@Override
-		public void onComponentResized(WidgetResizeEvent component)
-		{
-			if (label != null)
+			if(isPressed())
 			{
-				label.setWidth(getWidth());
-				label.setY(getHeight() / 2 - label.getHeight() / 2 - 1);
+				if(System.currentTimeMillis() - latestActionEvent > (firstRepeat ? 500L : 30L))
+				{
+					latestActionEvent = System.currentTimeMillis();
+					firstRepeat = false;
+					fireAction();
+				}
 			}
+		}
+		
+		private void fireAction()
+		{
+			getEventBus().post(new WidgetActionEvent(button, PRESS_ACTION));
 		}
 	}
 }

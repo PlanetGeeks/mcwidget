@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.planetgeeks.minecraft.widget.Widget;
-import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
 
 import com.google.common.collect.Sets;
 
@@ -21,16 +20,16 @@ public class WidgetGroupLayout extends WidgetLayout
 	private Group<?> horizontalGroup, verticalGroup;
 
 	@Override
-	public void onComponentResized(WidgetResizeEvent event)
+	public void dispose()
 	{
 		if (!isValid())
 			validate();
 
-		horizontalGroup.attemptResize(true, getLinkedComponent().getWidth());
-		horizontalGroup.collocate(true, 0);
+		horizontalGroup.attemptResize(Orientation.HORIZONTAL, getLinkedComponent().getWidth());
+		horizontalGroup.collocate(Orientation.HORIZONTAL, 0);
 
-		verticalGroup.attemptResize(false, getLinkedComponent().getHeight());
-		verticalGroup.collocate(false, 0);
+		verticalGroup.attemptResize(Orientation.VERTICAL, getLinkedComponent().getHeight());
+		verticalGroup.collocate(Orientation.VERTICAL, 0);
 	}
 	
 	/**
@@ -272,7 +271,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		 * 
 		 * @return the group size.
 		 */
-		protected abstract int getSize(boolean horizontal);
+		protected abstract int getSize(Orientation orientation);
 
 		/**
 		 * Attempts to resize the group to the given size.
@@ -281,7 +280,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		 * @param size - the preferred size.
 		 * @return the effective size set.
 		 */
-		protected abstract int attemptResize(boolean horizontal, int size);
+		protected abstract int attemptResize(Orientation orientation, int size);
 
 		/**
 		 * Collocates the group at the given offset.
@@ -290,7 +289,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		 * @param offset - the position offset (Where the element will be collocated).
 		 * @return the sum of the given offset and group's {@link #getSize(boolean)}.
 		 */
-		protected abstract int collocate(boolean horizontal, int offset);
+		protected abstract int collocate(Orientation orientation, int offset);
 		
 		protected abstract S self();
 
@@ -319,7 +318,7 @@ public class WidgetGroupLayout extends WidgetLayout
 			 * @param horizontal - true to consider width, false to consider height.
 			 * @return - the calculated size.
 			 */
-			protected abstract int getSize(boolean horizontal);
+			protected abstract int getSize(Orientation orientation);
 
 			/**
 			 * Attempt to resize the element to the given size.
@@ -328,7 +327,7 @@ public class WidgetGroupLayout extends WidgetLayout
 			 * @param size - the preferred size.
 			 * @return the effective size set.
 			 */
-			protected abstract int attemptResize(boolean horizontal, int size);
+			protected abstract int attemptResize(Orientation orientation, int size);
 			
 			/**
 			 * Collocates element at the given offset.
@@ -337,7 +336,7 @@ public class WidgetGroupLayout extends WidgetLayout
 			 * @param offset - the position offset (Where the element will be collocated).
 			 * @return the sum of the given offset and element's {@link #getSize(boolean)}.
 			 */
-			protected abstract int collocate(boolean horizontal, int offset);
+			protected abstract int collocate(Orientation orientation, int offset);
 		}
 
 		protected abstract class AlignableElement<T> extends Element<T>
@@ -388,20 +387,20 @@ public class WidgetGroupLayout extends WidgetLayout
 			}
 
 			@Override
-			protected int attemptResize(boolean horizontal, int size)
+			protected int attemptResize(@NonNull Orientation orientation, int size)
 			{
-				parseMinMax(horizontal);
-				return horizontal ? getElement().setWidth(size) : getElement().setHeight(size);
+				parseMinMax(orientation);
+				return orientation == Orientation.HORIZONTAL ? getElement().setWidth(size) : getElement().setHeight(size);
 			}
 
-			private void parseMinMax(boolean horizontal)
+			private void parseMinMax(@NonNull Orientation orientation)
 			{
 				if (minimumSize >= 0 && maximumSize >= minimumSize)
 				{
 					Dimension minimum = getElement().getMinimumSize().clone();
 					Dimension maximum = getElement().getMaximumSize().clone();
 
-					if (horizontal)
+					if (orientation == Orientation.HORIZONTAL)
 					{
 						minimum.setWidth(minimumSize);
 						maximum.setWidth(maximumSize);
@@ -417,20 +416,24 @@ public class WidgetGroupLayout extends WidgetLayout
 			}
 
 			@Override
-			protected int collocate(boolean horizontal, int offset)
+			protected int collocate(@NonNull Orientation orientation, int offset)
 			{
-				if(horizontal)
+				if(orientation == Orientation.HORIZONTAL)
+				{
 					getElement().setX(offset);
+					return offset + getElement().getWidth();
+				}
 				else
+				{
 					getElement().setY(offset);
-				
-				return offset + (horizontal ? getElement().getWidth() : getElement().getHeight());
+					return offset + getElement().getHeight();
+				}
 			}
 
 			@Override
-			protected int getSize(boolean horizontal)
+			protected int getSize(@NonNull Orientation orientation)
 			{
-				return horizontal ? getElement().getWidth() : getElement().getHeight();
+				return orientation == Orientation.HORIZONTAL ? getElement().getWidth() : getElement().getHeight();
 			}
 		}
 
@@ -453,21 +456,21 @@ public class WidgetGroupLayout extends WidgetLayout
 			}
 
 			@Override
-			protected int getSize(boolean horizontal)
+			protected int getSize(@NonNull Orientation orientation)
 			{
-				return getElement().getSize(horizontal);
+				return getElement().getSize(orientation);
 			}
 			
 			@Override
-			protected int attemptResize(boolean horizontal, int size)
+			protected int attemptResize(@NonNull Orientation orientation, int size)
 			{
-				return getElement().attemptResize(horizontal, size);
+				return getElement().attemptResize(orientation, size);
 			}
 
 			@Override
-			protected int collocate(boolean horizontal, int offset)
+			protected int collocate(@NonNull Orientation orientation, int offset)
 			{
-				return getElement().collocate(horizontal, offset);
+				return getElement().collocate(orientation, offset);
 			}
 		}
 	}
@@ -528,7 +531,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		 * @return the calculated size.
 		 */
 		@Override
-		protected int getSize(boolean horizontal)
+		protected int getSize(@NonNull Orientation orientation)
 		{
 			int size = 0;
 
@@ -536,7 +539,7 @@ public class WidgetGroupLayout extends WidgetLayout
 			{
 				for (Element<?> element : getElements())
 				{
-					size += element.getSize(horizontal);
+					size += element.getSize(orientation);
 				}
 			}
 			
@@ -544,7 +547,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		}
 		
 		@Override
-		protected int attemptResize(boolean horizontal, int size)
+		protected int attemptResize(@NonNull Orientation orientation, int size)
 		{
 			int filledSize = 0;
 			Set<Element<?>> filledElements = new HashSet<>();
@@ -570,7 +573,7 @@ public class WidgetGroupLayout extends WidgetLayout
 
 						int nextFill = 0;
 
-						filledSize += (nextFill = element.attemptResize(horizontal, nextSize + latestSize)) - latestSize;
+						filledSize += (nextFill = element.attemptResize(orientation, nextSize + latestSize)) - latestSize;
 
 						if (nextFill != nextSize + latestSize)
 							filledElements.add(element);
@@ -585,13 +588,13 @@ public class WidgetGroupLayout extends WidgetLayout
 		}
 
 		@Override
-		protected int collocate(boolean horizontal, int offset)
+		protected int collocate(@NonNull Orientation orientation, int offset)
 		{
 			synchronized(getElements())
 			{
 			    for(Element<?> element : getElements())
 			    {
-			    	offset = element.collocate(horizontal, offset);
+			    	offset = element.collocate(orientation, offset);
 			    }
 			}
 			
@@ -634,20 +637,20 @@ public class WidgetGroupLayout extends WidgetLayout
 			}
 
 			@Override
-			protected int attemptResize(boolean horizontal, int size)
+			protected int attemptResize(@NonNull Orientation orientation, int size)
 			{
 				getElement().setSize(size);
 				return getElement().getSize();
 			}
 
 			@Override
-			protected int collocate(boolean horizontal, int offset)
+			protected int collocate(@NonNull Orientation orientation, int offset)
 			{
 				return offset + getElement().getSize();
 			}
 
 			@Override
-			protected int getSize(boolean horizontal)
+			protected int getSize(@NonNull Orientation orientation)
 			{
 				return getElement().getSize();
 			}
@@ -728,7 +731,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		 * @return the calculated size.
 		 */
 		@Override
-		protected int getSize(boolean horizontal)
+		protected int getSize(@NonNull Orientation orientation)
 		{
 			int size = 0;
 
@@ -736,7 +739,7 @@ public class WidgetGroupLayout extends WidgetLayout
 			{
 				for (Element<?> element : getElements())
 				{
-					int nextSize = element.getSize(horizontal);
+					int nextSize = element.getSize(orientation);
 					
 					if(nextSize > size)
 						size = nextSize;
@@ -747,7 +750,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		}
 		
 		@Override
-		protected int attemptResize(boolean horizontal, int size)
+		protected int attemptResize(@NonNull Orientation orientation, int size)
 		{
 			int filledSize = 0;
 
@@ -755,7 +758,7 @@ public class WidgetGroupLayout extends WidgetLayout
 			{
 				for (Element<?> element : getElements())
 				{
-					int nextFill = element.attemptResize(horizontal, size);
+					int nextFill = element.attemptResize(orientation, size);
 
 					filledSize = nextFill > filledSize ? nextFill : filledSize;
 				}
@@ -765,9 +768,9 @@ public class WidgetGroupLayout extends WidgetLayout
 		}
 
 		@Override
-		protected int collocate(boolean horizontal, int offset)
+		protected int collocate(@NonNull Orientation orientation, int offset)
 		{
-			int groupSize = getSize(horizontal);
+			int groupSize = getSize(orientation);
 			
 			synchronized(getElements())
 			{
@@ -780,13 +783,13 @@ public class WidgetGroupLayout extends WidgetLayout
 						switch(alignable.getAlignment())
 						{
 							case LEADING:
-								element.collocate(horizontal, offset);
+								element.collocate(orientation, offset);
 								break;
 							case CENTER:
-								element.collocate(horizontal, offset + groupSize / 2 - element.getSize(horizontal) / 2);
+								element.collocate(orientation, offset + groupSize / 2 - element.getSize(orientation) / 2);
 								break;
 							case TRAILING:
-								element.collocate(horizontal, offset + groupSize - element.getSize(horizontal));
+								element.collocate(orientation, offset + groupSize - element.getSize(orientation));
 								break;
 						}
 					}

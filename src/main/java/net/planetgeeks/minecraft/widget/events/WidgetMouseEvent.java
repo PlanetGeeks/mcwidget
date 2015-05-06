@@ -9,9 +9,9 @@ import com.google.common.eventbus.Subscribe;
 
 public abstract class WidgetMouseEvent extends WidgetEvent
 {
-	public static final byte LEFT_BUTTON = 0;
-	public static final byte RIGHT_BUTTON = 1;
-	public static final byte MIDDLE_BUTTON = 2;
+	public static final int LEFT_BUTTON = 0;
+	public static final int RIGHT_BUTTON = 1;
+	public static final int MIDDLE_BUTTON = 2;
 
 	@Getter
 	@Setter(AccessLevel.PROTECTED)

@@ -18,8 +18,12 @@ public class WidgetFramework
      * - TextField - selection with mouse doesn't work.
      * - TextField - add text alignment support. 
      * 
+     * TO DO:
+     * - The new introduced shape render system must be improved (e.g. supporting intersection between different shapes).
+     * 
      * FUTURE FEATURES:
      * - Advanced logger system.
+     * - Floating Screen - a screen that can be rendered in the game into a space (xyz), it seems floating into the air! See the RenderGameOverlayEvent :O!
      * 
      * FUTURE COMPONENTS:
      * - Radio button.
@@ -32,4 +36,5 @@ public class WidgetFramework
      * - Tabbed panel.
      * - Menu (when right-click on a label for example).
      */
+ 
 }

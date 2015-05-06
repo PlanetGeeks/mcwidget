@@ -1,8 +1,10 @@
 package net.planetgeeks.minecraft.widget.layout;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+@Data
 @EqualsAndHashCode
 public class Dimension implements Cloneable
 {
@@ -51,6 +53,13 @@ public class Dimension implements Cloneable
 	{
 		this.height = checkComponent(height);
 
+		return this;
+	}
+	
+	public Dimension set(int width, int height)
+	{
+		setWidth(width);
+		setHeight(height);
 		return this;
 	}
 

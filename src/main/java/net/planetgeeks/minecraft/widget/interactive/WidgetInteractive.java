@@ -8,6 +8,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.lwjgl.input.Mouse;
+
 import lombok.Getter;
 import lombok.Setter;
 import net.planetgeeks.minecraft.widget.Widget;
@@ -20,31 +22,46 @@ import net.planetgeeks.minecraft.widget.events.WidgetMouseEvent.WidgetMouseButto
 import net.planetgeeks.minecraft.widget.events.WidgetMouseExitEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMouseMoveEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent.WidgetMousePressListener;
 import net.planetgeeks.minecraft.widget.events.WidgetMousePressOutsideEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent;
+import net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent.WidgetMouseReleaseListener;
+import net.planetgeeks.minecraft.widget.events.WidgetMouseWheelEvent;
 import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
-
-import com.google.common.eventbus.Subscribe;
 
 /**
  * Represents a Widget that can handle mouse/keyboard inputs.
  * <p>
  * <b>Complete list of supported events.</b>
  * <ul>
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetEnableEvent WidgetEnableEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetDisableEvent WidgetDisableEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseEvent WidgetMouseEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseButtonEvent WidgetMouseButtonEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseExitEvent WidgetMouseExitEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseEnterEvent WidgetMouseEnterEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent WidgetMousePressEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent WidgetMouseReleaseEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMousePressOutsideEvent WidgetMousePressOutsideEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseMoveEvent WidgetMouseMoveEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseDragEvent WidgetMouseDragEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetKeyEvent WidgetKeyEvent}
- * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetKeyTypeEvent WidgetKeyTypeEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetEnableEvent
+ * WidgetEnableEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetDisableEvent
+ * WidgetDisableEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseEvent
+ * WidgetMouseEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseButtonEvent
+ * WidgetMouseButtonEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseExitEvent
+ * WidgetMouseExitEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseEnterEvent
+ * WidgetMouseEnterEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent
+ * WidgetMousePressEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent
+ * WidgetMouseReleaseEvent}
+ * <li>
+ * {@link net.planetgeeks.minecraft.widget.events.WidgetMousePressOutsideEvent
+ * WidgetMousePressOutsideEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseMoveEvent
+ * WidgetMouseMoveEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetMouseDragEvent
+ * WidgetMouseDragEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetKeyEvent
+ * WidgetKeyEvent}
+ * <li> {@link net.planetgeeks.minecraft.widget.events.WidgetKeyTypeEvent
+ * WidgetKeyTypeEvent}
  * </ul>
  * 
  * @author Vincenzo Fortunato (Flood)
@@ -65,33 +82,41 @@ public abstract class WidgetInteractive extends Widget
 		super(xPosition, yPosition, width, height);
 
 		class InteractiveHandler
+				implements WidgetMousePressListener, WidgetMouseReleaseListener
 		{
-			@Subscribe
-			public void onEvent(WidgetMousePressEvent event)
+			private final WidgetInteractive interactive;
+
+			public InteractiveHandler(WidgetInteractive interactive)
 			{
-				synchronized(pressMap)
+				this.interactive = interactive;
+			}
+
+			@Override
+			public void onMousePressed(WidgetMousePressEvent event)
+			{
+				synchronized (pressMap)
 				{
-					pressMap.add(event.getMouseButton());	
+					pressMap.add(event.getMouseButton());
 				}
-				
-				if (event.isLeftButton())
+
+				if (event.isLeftButton() && (event.getComponent() == interactive || isParentOf(event.getComponent())))
 					pressed = true;
 			}
 
-			@Subscribe
-			public void onEvent(WidgetMouseReleaseEvent event)
+			@Override
+			public void onMouseReleased(WidgetMouseReleaseEvent event)
 			{
-				synchronized(pressMap)
+				synchronized (pressMap)
 				{
 					pressMap.remove(event.getMouseButton());
 				}
-				
+
 				if (event.isLeftButton())
 					pressed = false;
 			}
 		}
 
-		getEventBus().register(new InteractiveHandler());
+		getEventBus().register(new InteractiveHandler(this));
 	}
 
 	public WidgetInteractive(int width, int height)
@@ -202,24 +227,24 @@ public abstract class WidgetInteractive extends Widget
 	}
 
 	@Override
-	protected void onUpdate()
+	protected void handleMouseInput()
 	{
-		if (getParent() == null) // This is true only if it's the root widget (rendered and updated directly from a WidgetScreen).
-		{
-			Point mousePos = WidgetUtil.getMousePosition();
+		Point mousePos = WidgetUtil.getMousePosition();
 
+		if (getParent() == null)
+		{
 			if (latestMousePosition == null)
 				latestMousePosition = mousePos.clone();
-			
+
 			List<WidgetInteractive> componentsAt = getComponentsAt(mousePos);
 
 			if (!componentsAt.isEmpty())
 			{
 				WidgetInteractive topComponent = componentsAt.get(0);
 				WidgetMouseEnterEvent enterEvent = new WidgetMouseEnterEvent(topComponent, mousePos.getX(), mousePos.getY());
-                WidgetMouseMoveEvent moveEvent = latestMousePosition.equals(mousePos) ? new WidgetMouseMoveEvent(topComponent, mousePos.getX(), mousePos.getY(), latestMousePosition.getX(), latestMousePosition.getY()) : null;
+				WidgetMouseMoveEvent moveEvent = latestMousePosition.equals(mousePos) ? null : new WidgetMouseMoveEvent(topComponent, mousePos.getX(), mousePos.getY(), latestMousePosition.getX(), latestMousePosition.getY());
 				WidgetMouseDragEvent dragEvent = moveEvent != null ? new WidgetMouseDragEvent(moveEvent.getComponent(), moveEvent.getMouseX(), moveEvent.getMouseY(), WidgetMouseButtonEvent.LEFT_BUTTON, moveEvent.getLatestMouseX(), moveEvent.getLatestMouseY()) : null;
-                
+
 				for (WidgetInteractive component : componentsAt)
 				{
 					if (!component.mouseEntered)
@@ -227,7 +252,7 @@ public abstract class WidgetInteractive extends Widget
 						component.mouseEntered = true;
 						component.getEventBus().post(enterEvent);
 					}
-					
+
 					component.handleMouseMotion(moveEvent, dragEvent);
 				}
 			}
@@ -235,25 +260,25 @@ public abstract class WidgetInteractive extends Widget
 			checkExit(componentsAt, mousePos);
 		}
 
-		super.onUpdate();
+		if (isPressed() && !latestMousePosition.equals(mousePos))
+			getEventBus().post(new WidgetMouseDragEvent(this, mousePos.getX(), mousePos.getY(), WidgetMouseButtonEvent.LEFT_BUTTON, latestMousePosition.getX(), latestMousePosition.getY()));
+
+		int dWheel = Mouse.getEventDWheel();
+
+		if (dWheel != 0)
+			getEventBus().post(new WidgetMouseWheelEvent(this, mousePos.getX(), mousePos.getY(), dWheel));
+
+		super.handleMouseInput();
 	}
 
 	private void handleMouseMotion(WidgetMouseMoveEvent moveEvent, WidgetMouseDragEvent dragEvent)
 	{
-		if(moveEvent == null)
+		if (moveEvent == null)
 			return;
-		
+
 		getEventBus().post(moveEvent);
-		
-		synchronized(pressMap)
-		{
-			if(pressMap.contains(WidgetMouseButtonEvent.LEFT_BUTTON))
-			{
-				getEventBus().post(dragEvent);
-			}
-		}
 	}
-	
+
 	private void checkExit(List<WidgetInteractive> componentsAt, Point mousePos)
 	{
 		if (mouseEntered && !componentsAt.contains(this))
@@ -335,7 +360,7 @@ public abstract class WidgetInteractive extends Widget
 
 		return component == null && getHitbox().isPointInside(point) ? this : component;
 	}
-	
+
 	/**
 	 * Wrapper method of {@link #getTopComponentAt(Point)}.
 	 * 
