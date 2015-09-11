@@ -1,7 +1,6 @@
 package net.planetgeeks.minecraft.widget.components;
 
 import lombok.Getter;
-import net.minecraft.client.Minecraft;
 import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
@@ -20,16 +19,9 @@ public class WidgetProgressBar extends WidgetInteractive
 	private boolean indeterminate;
     private long indeterminateTime = -1L;
     private int indeterminateSpeed = 50;
-    
-	
-	public WidgetProgressBar(int width, int height)
-	{
-		this(0, 0, width, height);
-	}
 
-	public WidgetProgressBar(int xPosition, int yPosition, int width, int height)
+	public WidgetProgressBar()
 	{
-		super(xPosition, yPosition, width, height);
 		this.setMinimumSize(new Dimension(2, 2));
 	}
 

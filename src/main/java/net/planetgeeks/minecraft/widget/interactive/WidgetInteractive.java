@@ -8,8 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.lwjgl.input.Mouse;
-
 import lombok.Getter;
 import lombok.Setter;
 import net.planetgeeks.minecraft.widget.Widget;
@@ -29,6 +27,8 @@ import net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent.WidgetMou
 import net.planetgeeks.minecraft.widget.events.WidgetMouseWheelEvent;
 import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
+
+import org.lwjgl.input.Mouse;
 
 /**
  * Represents a Widget that can handle mouse/keyboard inputs.
@@ -77,12 +77,9 @@ public abstract class WidgetInteractive extends Widget
 	private static Point latestMousePosition = null;
 	private Set<Integer> pressMap = new HashSet<>();
 
-	public WidgetInteractive(int xPosition, int yPosition, int width, int height)
+	public WidgetInteractive()
 	{
-		super(xPosition, yPosition, width, height);
-
-		class InteractiveHandler
-				implements WidgetMousePressListener, WidgetMouseReleaseListener
+		class InteractiveHandler implements WidgetMousePressListener, WidgetMouseReleaseListener
 		{
 			private final WidgetInteractive interactive;
 
@@ -117,11 +114,6 @@ public abstract class WidgetInteractive extends Widget
 		}
 
 		getEventBus().register(new InteractiveHandler(this));
-	}
-
-	public WidgetInteractive(int width, int height)
-	{
-		this(0, 0, width, height);
 	}
 
 	/**

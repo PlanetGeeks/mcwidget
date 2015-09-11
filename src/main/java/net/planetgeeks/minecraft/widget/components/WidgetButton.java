@@ -31,49 +31,46 @@ import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.TextContent;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
-public class WidgetButton extends WidgetInteractive
-		implements TextContent
+public class WidgetButton extends WidgetInteractive implements TextContent
 {
 	private static final byte DISABLED = 0, ENABLED = 1, HOVERED = 2;
 	private static final byte PRESS_ACTION = 0;
 	private static final TextureRegion TEXTURE = new TextureRegion(WidgetUtil.guiTexture("components.png"), 0, 16, 200, 60);
 
 	@Getter
-	private WidgetFixedLabel label;
+	private WidgetLabel label;
+	
 	@Getter
 	@Setter
 	@NonNull
 	private Color hoverForegroundColor = new Color(16777120);
+	
 	@Getter
 	@Setter
 	@NonNull
 	private Color disabledForegroundColor = new Color(10526880);
+	
 	@Getter
 	@Setter
 	@NonNull
 	private Color foregroundColor = Color.WHITE;
+	
 	@Getter(AccessLevel.PROTECTED)
 	@Setter(AccessLevel.PROTECTED)
 	private NinePatch[] ninePatches;
+	
 	@Setter
 	private boolean repeatActionEvent = false;
 
-	public WidgetButton(int width, int height)
+	public WidgetButton()
 	{
-		this(0, 0, width, height, "");
+		this("");
 	}
 
-	public WidgetButton(int width, int height, String text)
+	public WidgetButton(String text)
 	{
-		this(0, 0, width, height, text);
-	}
-
-	public WidgetButton(int xPosition, int yPosition, int width, int height, String text)
-	{
-		super(xPosition, yPosition, width, height);
 		getEventBus().register(new WidgetButtonHandler(this));
-		label = new WidgetFixedLabel(getWidth());
-		label.setText(text);
+		label = new WidgetLabel(text);
 		label.setHorizontalAlignment(Alignment.CENTER);
 		init();
 	}
@@ -91,7 +88,7 @@ public class WidgetButton extends WidgetInteractive
 		ninePatches[HOVERED] = new NinePatch.Dynamic(this, TEXTURE.split(0, 40, 200, 20), 2, 2, 2, 3);
 		setMinimumSize(new Dimension(4, 5));
 	}
-	
+
 	public boolean isRepeatingActionEvent()
 	{
 		return repeatActionEvent;
@@ -122,10 +119,7 @@ public class WidgetButton extends WidgetInteractive
 		return label.getText();
 	}
 
-	protected class WidgetButtonHandler
-			implements WidgetMousePressListener, WidgetMouseEnterListener,
-			WidgetMouseExitListener, WidgetEnableListener,
-			WidgetDisableListener, WidgetUpdateListener
+	protected class WidgetButtonHandler implements WidgetMousePressListener, WidgetMouseEnterListener, WidgetMouseExitListener, WidgetEnableListener, WidgetDisableListener, WidgetUpdateListener
 	{
 		private final WidgetButton button;
 		private long latestActionEvent = 0L;
@@ -191,13 +185,13 @@ public class WidgetButton extends WidgetInteractive
 		{
 			label.setForegroundColor(getDisabledForegroundColor());
 		}
-		
+
 		@Override
 		public void onComponentUpdated(WidgetUpdateEvent event)
 		{
-			if(isPressed())
+			if (isPressed())
 			{
-				if(System.currentTimeMillis() - latestActionEvent > (firstRepeat ? 500L : 30L))
+				if (System.currentTimeMillis() - latestActionEvent > (firstRepeat ? 500L : 30L))
 				{
 					latestActionEvent = System.currentTimeMillis();
 					firstRepeat = false;
@@ -205,7 +199,7 @@ public class WidgetButton extends WidgetInteractive
 				}
 			}
 		}
-		
+
 		private void fireAction()
 		{
 			getEventBus().post(new WidgetActionEvent(button, PRESS_ACTION));

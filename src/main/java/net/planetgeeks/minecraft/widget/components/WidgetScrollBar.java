@@ -13,13 +13,12 @@ import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent.WidgetMousePressListener;
 import net.planetgeeks.minecraft.widget.events.WidgetMouseWheelEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetMouseWheelEvent.WidgetMouseWheelListener;
-import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
-import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent.WidgetResizeListener;
 import net.planetgeeks.minecraft.widget.interactive.WidgetFocusable;
 import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
 import net.planetgeeks.minecraft.widget.layout.Direction;
 import net.planetgeeks.minecraft.widget.layout.Orientation;
+import net.planetgeeks.minecraft.widget.layout.WidgetLayout;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
 import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.Point;
@@ -27,8 +26,10 @@ import net.planetgeeks.minecraft.widget.util.Point;
 import org.lwjgl.input.Keyboard;
 
 @Getter
-public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeListener
+public class WidgetScrollBar extends WidgetInteractive
 {
+	public static final byte VALUE_CHANGE_ACTION = 0;
+
 	private Orientation orientation;
 	private int value = 0;
 	private int readableValue = 43;
@@ -38,78 +39,89 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 
 	private WidgetArrowButton incrementButton;
 	private WidgetArrowButton decrementButton;
-	private WidgetBarContainer barContainer;
-	private WidgetBar bar;
+	private WidgetScrollBarTrack track;
+	private WidgetScrollBarKnob knob;
 
-	public WidgetScrollBar(int width, int height, Orientation orientation)
+	public WidgetScrollBar()
 	{
-		this(0, 0, width, height, orientation);
+		this(Orientation.HORIZONTAL);
 	}
 
-	public WidgetScrollBar(int xPosition, int yPosition, int width, int height, @NonNull Orientation orientation)
+	public WidgetScrollBar(@NonNull Orientation orientation)
 	{
-		super(xPosition, yPosition, width, height);
 		this.orientation = orientation;
-		this.init();
-	}
-
-	protected void init()
-	{
-		class IncrementAction
-				implements WidgetActionListener
-		{
-			private boolean increment;
-
-			public IncrementAction(boolean increment)
-			{
-				this.increment = increment;
-			}
-
-			@Override
-			public void onAction(WidgetActionEvent event)
-			{
-				increment(increment ? 1 : -1);
-			}
-		}
-
 		add(this.incrementButton = createIncrementButton());
-		this.incrementButton.setRepeatActionEvent(true);
-		this.incrementButton.getEventBus().register(new IncrementAction(true));
-
 		add(this.decrementButton = createDecrementButton());
-		this.decrementButton.setRepeatActionEvent(true);
-		this.decrementButton.getEventBus().register(new IncrementAction(false));
-
-		add(this.barContainer = createBarContainer());
-		this.barContainer.add(this.bar = createDraggableBar());
-
+		add(this.track = createBarTrack());
+		this.track.add(this.knob = createBarKnob());
 		setArrowsEnabled(this.usingArrows);
+		setLayout(new WidgetScrollBarLayout());
 	}
 
 	protected WidgetArrowButton createIncrementButton()
 	{
+		WidgetArrowButton button;
+
 		if (orientation == Orientation.HORIZONTAL)
-			return new WidgetArrowButton(getHeight(), getHeight(), Direction.RIGHT);
+		{
+			button = new WidgetArrowButton(Direction.RIGHT);
+			button.setSize(new Dimension(getHeight(), getHeight()));
+		}
 		else
-			return new WidgetArrowButton(getWidth(), getWidth(), Direction.DOWN);
+		{
+			button = new WidgetArrowButton(Direction.DOWN);
+			button.setSize(new Dimension(getWidth(), getWidth()));
+		}
+		
+		button.setRepeatActionEvent(true);
+		button.getEventBus().register(new WidgetActionListener()
+		{
+			@Override
+			public void onAction(WidgetActionEvent event)
+			{
+				increment(1);
+			}
+		});
+
+		return button;
 	}
 
 	protected WidgetArrowButton createDecrementButton()
 	{
+		WidgetArrowButton button;
+
 		if (orientation == Orientation.HORIZONTAL)
-			return new WidgetArrowButton(getHeight(), getHeight(), Direction.LEFT);
+		{
+			button = new WidgetArrowButton(Direction.LEFT);
+			button.setSize(new Dimension(getHeight(), getHeight()));
+		}
 		else
-			return new WidgetArrowButton(getWidth(), getWidth(), Direction.UP);
+		{
+			button = new WidgetArrowButton(Direction.UP);
+			button.setSize(new Dimension(getWidth(), getWidth()));
+		}
+		
+		button.setRepeatActionEvent(true);
+		button.getEventBus().register(new WidgetActionListener()
+		{
+			@Override
+			public void onAction(WidgetActionEvent event)
+			{
+				decrement(1);
+			}
+		});
+
+		return button;
 	}
 
-	protected WidgetBar createDraggableBar()
+	protected WidgetScrollBarKnob createBarKnob()
 	{
-		return new WidgetBar(0, 0);
+		return new WidgetScrollBarKnob();
 	}
 
-	protected WidgetBarContainer createBarContainer()
+	protected WidgetScrollBarTrack createBarTrack()
 	{
-		return new WidgetBarContainer(0, 0);
+		return new WidgetScrollBarTrack();
 	}
 
 	public void setOrientation(@NonNull Orientation orientation)
@@ -120,7 +132,8 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 	public void setValue(int value)
 	{
 		this.value = value > getMaximumValue() ? getMaximumValue() : (value < 0 ? 0 : value);
-		dispose();
+		layout();
+		getEventBus().post(new WidgetActionEvent(this, VALUE_CHANGE_ACTION));
 	}
 
 	public int getMaximumValue()
@@ -185,89 +198,7 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 		this.usingArrows = arrowsEnabled;
 		this.incrementButton.setVisible(this.usingArrows);
 		this.decrementButton.setVisible(this.usingArrows);
-		dispose();
-	}
-
-	protected void dispose()
-	{
-		disposeArrows();
-		disposeBarContainer();
-		disposeBar();
-	}
-
-	protected void disposeArrows()
-	{
-		if (isUsingArrows())
-		{
-			int size, decrementX, decrementY, incrementX, incrementY;
-
-			if (orientation == Orientation.HORIZONTAL)
-			{
-				size = getHeight();
-				incrementX = getWidth() - size;
-				decrementX = decrementY = incrementY = 0;
-			}
-			else
-			{
-				size = getWidth();
-				incrementY = getHeight() - size;
-				decrementX = decrementY = incrementX = 0;
-			}
-
-			decrementButton.setSize(new Dimension(size, size));
-			decrementButton.setPosition(new Point(decrementX, decrementY));
-
-			incrementButton.setSize(new Dimension(size, size));
-			incrementButton.setPosition(new Point(incrementX, incrementY));
-		}
-	}
-
-	protected void disposeBarContainer()
-	{
-		int containerWidth = 0, containerHeight = 0, containerX = 0, containerY = 0;
-
-		if (orientation == Orientation.HORIZONTAL)
-		{
-			containerWidth = getWidth() - (isUsingArrows() ? getHeight() * 2 : 0);
-			containerHeight = getHeight();
-			containerX = getHeight();
-		}
-		else
-		{
-			containerWidth = getWidth();
-			containerHeight = getHeight() - (isUsingArrows() ? getWidth() * 2 : 0);
-			containerY = getWidth();
-		}
-
-		barContainer.setSize(new Dimension(containerWidth, containerHeight));
-		barContainer.setPosition(new Point(containerX, containerY));
-	}
-
-	protected void disposeBar()
-	{
-		int barWidth = 0, barHeight = 0, barX = 0, barY = 0;
-
-		if (orientation == Orientation.HORIZONTAL)
-		{
-			barWidth = Math.round(bar.getBarSize());
-			barHeight = getHeight();
-			barX = Math.round(bar.getBarPosition());
-		}
-		else
-		{
-			barWidth = getWidth();
-			barHeight = Math.round(bar.getBarSize());
-			barY = Math.round(bar.getBarPosition());
-		}
-
-		bar.setSize(new Dimension(barWidth, barHeight));
-		bar.setPosition(new Point(barX, barY));
-	}
-
-	@Override
-	public void onComponentResized(WidgetResizeEvent event)
-	{
-		dispose();
+		layout();
 	}
 
 	@Override
@@ -275,16 +206,93 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 	{
 	}
 
-	protected class WidgetBarContainer extends WidgetInteractive
+	protected class WidgetScrollBarLayout extends WidgetLayout
 	{
-		public WidgetBarContainer(int width, int height)
+		@Override
+		public void dispose()
 		{
-			this(0, 0, width, height);
+			disposeArrows();
+			disposeBarContainer();
+			disposeBar();
 		}
 
-		public WidgetBarContainer(int xPosition, int yPosition, int width, int height)
+		protected void disposeArrows()
 		{
-			super(xPosition, yPosition, width, height);
+			if (isUsingArrows())
+			{
+				int size, decrementX, decrementY, incrementX, incrementY;
+
+				if (orientation == Orientation.HORIZONTAL)
+				{
+					size = getHeight();
+					incrementX = getWidth() - size;
+					decrementX = decrementY = incrementY = 0;
+				}
+				else
+				{
+					size = getWidth();
+					incrementY = getHeight() - size;
+					decrementX = decrementY = incrementX = 0;
+				}
+
+				decrementButton.setSize(new Dimension(size, size));
+				decrementButton.setPosition(new Point(decrementX, decrementY));
+
+				incrementButton.setSize(new Dimension(size, size));
+				incrementButton.setPosition(new Point(incrementX, incrementY));
+			}
+		}
+
+		protected void disposeBarContainer()
+		{
+			int containerWidth = 0, containerHeight = 0, containerX = 0, containerY = 0;
+
+			if (orientation == Orientation.HORIZONTAL)
+			{
+				containerWidth = getWidth() - (isUsingArrows() ? getHeight() * 2 : 0);
+				containerHeight = getHeight();
+				containerX = getHeight();
+			}
+			else
+			{
+				containerWidth = getWidth();
+				containerHeight = getHeight() - (isUsingArrows() ? getWidth() * 2 : 0);
+				containerY = getWidth();
+			}
+//TODO NON MI PIACE
+			//containerWidth = containerWidth < 0 ? 0 : containerWidth;
+			//containerHeight = containerHeight < 0 ? 0 : containerHeight;
+			
+			track.setSize(new Dimension(containerWidth, containerHeight));
+			track.setPosition(new Point(containerX, containerY));
+		}
+
+		protected void disposeBar()
+		{
+			int barWidth = 0, barHeight = 0, barX = 0, barY = 0;
+
+			if (orientation == Orientation.HORIZONTAL)
+			{
+				barWidth = Math.round(knob.getBarSize());
+				barHeight = getHeight();
+				barX = Math.round(knob.getBarPosition());
+			}
+			else
+			{
+				barWidth = getWidth();
+				barHeight = Math.round(knob.getBarSize());
+				barY = Math.round(knob.getBarPosition());
+			}
+
+			knob.setSize(new Dimension(barWidth, barHeight));
+			knob.setPosition(new Point(barX, barY));
+		}
+	}
+
+	protected class WidgetScrollBarTrack extends WidgetInteractive
+	{
+		public WidgetScrollBarTrack()
+		{
 			final Widget instance = this;
 			this.getEventBus().register(new WidgetMousePressListener()
 			{
@@ -294,7 +302,7 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 					if (event.isLeftButton() && event.getComponent() == instance)
 					{
 						int position = orientation == Orientation.HORIZONTAL ? event.getMouseX() - getXOnScreen() : event.getMouseY() - getYOnScreen();
-						setValue(bar.getValueByPosition(position - bar.getBarSize() / 2));
+						setValue(knob.getValueByPosition(position - knob.getBarSize() / 2));
 					}
 				}
 			});
@@ -313,23 +321,16 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 		}
 	}
 
-	protected class WidgetBar extends WidgetFocusable
+	protected class WidgetScrollBarKnob extends WidgetFocusable
 	{
-		public WidgetBar(int width, int height)
-		{
-			this(0, 0, width, height);
-		}
-
-		public WidgetBar(int xPosition, int yPosition, int width, int height)
-		{
-			super(xPosition, yPosition, width, height);
-
+		public WidgetScrollBarKnob()
+		{	
 			this.getEventBus().register(new WidgetMouseDragListener()
 			{
 				@Override
 				public void onMouseDragged(WidgetMouseDragEvent event)
 				{
-					int position = orientation == Orientation.HORIZONTAL ? event.getMouseX() - barContainer.getXOnScreen() : event.getMouseY() - barContainer.getYOnScreen();
+					int position = orientation == Orientation.HORIZONTAL ? event.getMouseX() - track.getXOnScreen() : event.getMouseY() - track.getYOnScreen();
 					setValue(getValueByPosition(position - getBarSize() / 2));
 				}
 			});
@@ -384,7 +385,7 @@ public class WidgetScrollBar extends WidgetInteractive implements WidgetResizeLi
 
 		public float getBarSize()
 		{
-			return (barContainer.getContainerSize() * readableValue) / (float) totalValue;
+			return (track.getContainerSize() * readableValue) / (float) totalValue;
 		}
 
 		public float getBarPosition()

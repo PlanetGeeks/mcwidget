@@ -118,7 +118,7 @@ public class WidgetUtil
 	{
 		return new Point(getMouseX(), getMouseY());
 	}
-	
+
 	public static String getStringFromClipboard()
 	{
 		Transferable transferable = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);

@@ -68,4 +68,9 @@ public class Gap
 		
 		setSize(getSize());
 	}
+	
+	public static Gap fixedGap(int fixedSize)
+	{
+		return new Gap(fixedSize, fixedSize, fixedSize);
+	}
 }

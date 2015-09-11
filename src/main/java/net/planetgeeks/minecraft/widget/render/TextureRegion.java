@@ -14,9 +14,9 @@ public class TextureRegion extends Texture
 	@Getter
 	private final int textureY;
 	@Getter
-	private final int regionWidth;
+	private final int width;
 	@Getter
-	private final int regionHeight;
+	private final int height;
 
 	/**
 	 * Create a new instance of TextureRegion coping the resource from another
@@ -54,8 +54,8 @@ public class TextureRegion extends Texture
 
 		this.textureX = textureX;
 		this.textureY = textureY;
-		this.regionWidth = regionWidth;
-		this.regionHeight = regionHeight;
+		this.width = regionWidth;
+		this.height = regionHeight;
 	}
 
 	/**
@@ -74,6 +74,6 @@ public class TextureRegion extends Texture
 	
 	public Dimension getSize()
 	{
-		return new Dimension(getRegionWidth(), getRegionHeight());
+		return new Dimension(getWidth(), getHeight());
 	}
 }

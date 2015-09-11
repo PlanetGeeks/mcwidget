@@ -33,6 +33,15 @@ public class WidgetResizeEvent extends WidgetEvent
 		return latestSize.getHeight();
 	}
 	
+	/**
+	 * 
+	 * @return true, if latest size is different from actual size.
+	 */
+	public boolean isChanged()
+	{
+		return !latestSize.equals(getComponent().getSize());
+	}
+	
 	public static interface WidgetResizeListener
 	{
 		@Subscribe void onComponentResized(WidgetResizeEvent event);

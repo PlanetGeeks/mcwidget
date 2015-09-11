@@ -45,7 +45,7 @@ import com.google.common.eventbus.SubscriberExceptionHandler;
  */
 public abstract class Widget extends Gui implements Drawable, Visible
 {
-	public Minecraft mc;
+	public Minecraft mc = Minecraft.getMinecraft();
 	private Dimension size = new Dimension();
 	private Point position = new Point();
 	@Getter
@@ -57,51 +57,34 @@ public abstract class Widget extends Gui implements Drawable, Visible
 	private boolean visible = true;
 	private Widget parent;
 	@Getter
-	private WidgetRenderer renderer;
+	private WidgetRenderer renderer = new WidgetRenderer(this);
 	@Getter
 	private WidgetLayout layout = null;
 	private final EventBus eventBus = createEventBus();
-
-	/**
-	 * Creates a new instance of Widget.
-	 * 
-	 * @param xPosition - the x coordinate.
-	 * @param yPosition - the y coordinate.
-	 * @param width - the width of the component.
-	 * @param height - the height of the component.
-	 */
-	public Widget(int xPosition, int yPosition, int width, int height)
-	{
-		setPosition(new Point(xPosition, yPosition));
-		setSize(new Dimension(width, height));
-		this.mc = Minecraft.getMinecraft();
-		this.renderer = new WidgetRenderer(this);
-	}
-
-	/**
-	 * Creates a new instance of Widget with position at {x:0,y:0}
-	 * <p>
-	 * Wrapper constructor of {@link #Widget(int, int, int, int)}
-	 * 
-	 * @param width - the width of the component.
-	 * @param height - the height of the component.
-	 */
-	public Widget(int width, int height)
-	{
-		this(0, 0, width, height);
-	}
-
+	
 	/**
 	 * Set layout.
 	 * 
-	 * @param layout - the layout to set.
+	 * @param layout - the layout to set, can be null.
 	 */
 	public void setLayout(WidgetLayout layout)
 	{
 		if(this.layout != null)
 			this.layout.unlink();
 		
-		this.layout = layout.link(this);
+		this.layout = layout;
+		
+		if(this.layout != null)
+			this.layout.link(this);
+	}
+	
+	/**
+	 * If the set layout is not null, dispose it.
+	 */
+	public void layout()
+	{
+		if(this.layout != null)
+			this.layout.dispose();
 	}
 	
 	protected EventBus createEventBus()

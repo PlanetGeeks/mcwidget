@@ -32,16 +32,14 @@ public class WidgetSpinner extends WidgetButton
 	@Setter
 	private float incrementSpeed = 3.0F;
 
-	public WidgetSpinner(int width, int height)
+	public WidgetSpinner()
 	{
-		super(width, height);
-
 		setMinimumSize(new Dimension(13, 14));
 		setMaximumSize(new Dimension(Integer.MAX_VALUE, 14));
 
-		inputField = new WidgetTextField(getWidth() - 13, 14);
-		incrementButton = new WidgetArrowButton(getWidth() - 13, 0, 13, 7, Direction.UP);
-		decrementButton = new WidgetArrowButton(getWidth() - 13, 7, 13, 7, Direction.DOWN);
+		inputField = new WidgetTextField();
+		incrementButton = new WidgetArrowButton(Direction.UP);
+		decrementButton = new WidgetArrowButton(Direction.DOWN);
 		incrementButton.getEventBus().register(new ArrowButtonHandler(incrementButton));
 		decrementButton.getEventBus().register(new ArrowButtonHandler(decrementButton));
 		
@@ -98,8 +96,7 @@ public class WidgetSpinner extends WidgetButton
 		inputField.setText(String.valueOf(value));
 	}
 
-	protected class ArrowButtonHandler
-			implements WidgetMousePressListener, WidgetMouseReleaseListener
+	protected class ArrowButtonHandler implements WidgetMousePressListener, WidgetMouseReleaseListener
 	{
 		private long latestUpdate = 0L;
 

@@ -136,7 +136,6 @@ public abstract class WidgetScreen extends GuiScreen implements Screen,
 
 		public WidgetScreenPanel(T screen)
 		{
-			super(0, 0);
 			this.screen = screen;
 		}
 

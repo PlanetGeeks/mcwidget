@@ -1,4 +1,4 @@
-package net.planetgeeks.minecraft.widget.layout;
+ package net.planetgeeks.minecraft.widget.layout;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -116,8 +116,7 @@ public class WidgetGroupLayout extends WidgetLayout
 		super.unlink();
 		return this;
 	}
-
-	@Override
+	
 	public Set<Widget> getAddedComponents()
 	{
 		Set<Widget> components = new HashSet<>();

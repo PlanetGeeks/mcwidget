@@ -1,12 +1,7 @@
 package net.planetgeeks.minecraft.widget.components;
 
-import static net.planetgeeks.minecraft.widget.layout.Direction.DOWN;
-import static net.planetgeeks.minecraft.widget.layout.Direction.LEFT;
-import static net.planetgeeks.minecraft.widget.layout.Direction.RIGHT;
 import lombok.Getter;
 import lombok.NonNull;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.renderer.GlStateManager;
 import net.planetgeeks.minecraft.widget.layout.Alignment;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
 import net.planetgeeks.minecraft.widget.layout.Direction;
@@ -14,6 +9,7 @@ import net.planetgeeks.minecraft.widget.layout.WidgetGroupLayout;
 import net.planetgeeks.minecraft.widget.render.NinePatch;
 import net.planetgeeks.minecraft.widget.render.TextureRegion;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
+import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
 public class WidgetArrowButton extends WidgetButton
@@ -23,16 +19,15 @@ public class WidgetArrowButton extends WidgetButton
 
 	@Getter
 	private Direction direction;
-	private WidgetImage arrowImage;
+	private ArrowImage arrowImage = new ArrowImage(TEXTURE.split(36, 1, 5, 3));
 
-	public WidgetArrowButton(int width, int height, Direction direction)
+	public WidgetArrowButton()
 	{
-		this(0, 0, width, height, direction);
+		this(Direction.UP);
 	}
 
-	public WidgetArrowButton(int xPosition, int yPosition, int width, int height, @NonNull Direction direction)
+	public WidgetArrowButton(@NonNull Direction direction)
 	{
-		super(xPosition, yPosition, width, height, "");
 		init(direction);
 	}
 
@@ -59,27 +54,43 @@ public class WidgetArrowButton extends WidgetButton
 
 	public void setDirection(Direction direction)
 	{
-		if (direction == LEFT || direction == RIGHT)
-		{
-			//TODO CORRECT FOR NOW
-			direction = Direction.UP;
-		}
-
 		this.direction = direction;
-
-		TextureRegion texture = TEXTURE.split(36, direction == DOWN ? 1 : 5, 5, 3);
-
-		if (this.arrowImage == null)
-			this.arrowImage = new WidgetImage(texture);
-		else
-			this.arrowImage.setImageTexture(texture); // TODO ADD SUPPORT FOR
-														// LEFT AND
-		// RIGHT ARROWS.
 	}
 
 	@Override
 	protected void drawComponent(int mouseX, int mouseY, float partialTicks, WidgetRenderer renderer)
 	{
 		getNinePatches()[isPressed() ? PRESSED : (isHovered(mouseX, mouseY) ? HOVERED : ENABLED)].draw(mouseX, mouseY, partialTicks, renderer);
+	}
+
+	class ArrowImage extends WidgetImageIcon
+	{
+		public ArrowImage(TextureRegion texture)
+		{
+			super(texture);
+		}
+		
+		@Override
+		public void drawComponent(int mouseX, int mouseY, float partialTicks, WidgetRenderer renderer)
+		{
+			renderer.push();
+			Point rotationOrigin = new Point(getWidth() / 2, getHeight() / 2);
+			switch (direction)
+		 	{
+				case UP:
+					renderer.rotate(180, rotationOrigin);
+					break;
+				case RIGHT:
+					renderer.rotate(-Math.PI / 2, rotationOrigin);
+					break;
+				case LEFT:
+					renderer.rotate(Math.PI / 2, rotationOrigin);
+					break;
+				default:
+					break;
+			}
+			super.drawComponent(mouseX, mouseY, partialTicks, renderer);
+			renderer.pop();
+		}
 	}
 }

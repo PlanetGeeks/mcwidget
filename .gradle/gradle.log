@@ -1,27 +1,19 @@
-****************************
- Powered By MCP:             
- http://mcp.ocean-labs.de/   
- Searge, ProfMobius, Fesh0r, 
- R4wk, ZeuX, IngisKahn, bspkrs
- MCP Data version : snapshot_20141130
-****************************
-:eclipseClasspath
-:eclipseJdt
-:eclipseProject
-:eclipse
-:epicrealm-core:eclipseClasspath
-:epicrealm-core:eclipseJdt
-:epicrealm-core:eclipseProject
-:epicrealm-core:eclipse
-:epicrealm-trade:eclipseClasspath
-:epicrealm-trade:eclipseJdt
-:epicrealm-trade:eclipseProject
-:epicrealm-trade:eclipse
-:widget:eclipseClasspath
-:widget:eclipseJdt
-:widget:eclipseProject
-:widget:eclipse
+:widget:compileApiJava UP-TO-DATE
+:widget:processApiResources UP-TO-DATE
+:widget:apiClasses UP-TO-DATE
+:widget:sourceMainJava
+:widget:compileJavajavacTask: target release 1.6 conflicts with default source release 1.8
+ FAILED
 
-BUILD SUCCESSFUL
+FAILURE: Build failed with an exception.
 
-Total time: 19.005 secs
+* What went wrong:
+Execution failed for task ':widget:compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output.
+
+BUILD FAILED
+
+Total time: 6.516 secs

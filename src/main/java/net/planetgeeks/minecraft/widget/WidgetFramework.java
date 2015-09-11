@@ -24,6 +24,7 @@ public class WidgetFramework
      * FUTURE FEATURES:
      * - Advanced logger system.
      * - Floating Screen - a screen that can be rendered in the game into a space (xyz), it seems floating into the air! See the RenderGameOverlayEvent :O!
+     * - ToolTip - a label that describes a component.
      * 
      * FUTURE COMPONENTS:
      * - Radio button.
@@ -36,5 +37,4 @@ public class WidgetFramework
      * - Tabbed panel.
      * - Menu (when right-click on a label for example).
      */
- 
 }

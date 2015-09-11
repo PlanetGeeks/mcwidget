@@ -64,25 +64,25 @@ public class NinePatch implements Drawable
 	private void updateTextures()
 	{
 		patchedTextures[TOP_LEFT_CORNER] = texture.split(0, 0, left, top);
-		patchedTextures[TOP_RIGHT_CORNER] = texture.split(texture.getRegionWidth() - right, 0, right, top);
-		patchedTextures[MIDDLE_TOP] = texture.split(left, 0, texture.getRegionWidth() - left - right, top);
-		patchedTextures[MIDDLE_LEFT] = texture.split(0, top, left, texture.getRegionHeight() - top - bottom);
-		patchedTextures[CENTER] = texture.split(left, top, texture.getRegionWidth() - left - right, texture.getRegionHeight() - top - bottom);
-		patchedTextures[MIDDLE_RIGHT] = texture.split(texture.getRegionWidth() - right, top, right, texture.getRegionHeight() - top - bottom);
-		patchedTextures[BOTTOM_LEFT_CORNER] = texture.split(0, texture.getRegionHeight() - bottom, left, bottom);
-		patchedTextures[BOTTOM_RIGHT_CORNER] = texture.split(texture.getRegionWidth() - right, texture.getRegionHeight() - bottom, right, bottom);
-		patchedTextures[MIDDLE_BOTTOM] = texture.split(left, texture.getRegionHeight() - bottom, texture.getRegionWidth() - left - right, bottom);
+		patchedTextures[TOP_RIGHT_CORNER] = texture.split(texture.getWidth() - right, 0, right, top);
+		patchedTextures[MIDDLE_TOP] = texture.split(left, 0, texture.getWidth() - left - right, top);
+		patchedTextures[MIDDLE_LEFT] = texture.split(0, top, left, texture.getHeight() - top - bottom);
+		patchedTextures[CENTER] = texture.split(left, top, texture.getWidth() - left - right, texture.getHeight() - top - bottom);
+		patchedTextures[MIDDLE_RIGHT] = texture.split(texture.getWidth() - right, top, right, texture.getHeight() - top - bottom);
+		patchedTextures[BOTTOM_LEFT_CORNER] = texture.split(0, texture.getHeight() - bottom, left, bottom);
+		patchedTextures[BOTTOM_RIGHT_CORNER] = texture.split(texture.getWidth() - right, texture.getHeight() - bottom, right, bottom);
+		patchedTextures[MIDDLE_BOTTOM] = texture.split(left, texture.getHeight() - bottom, texture.getWidth() - left - right, bottom);
 	}
 
 	private void checkWidth()
 	{
-		if (right + left > texture.getRegionWidth())
+		if (right + left > texture.getWidth())
 			throw new IllegalArgumentException("Invalid nine patch! The result of left plus right must be less or equals to texture region width.");
 	}
 
 	private void checkHeight()
 	{
-		if (top + bottom > texture.getRegionHeight())
+		if (top + bottom > texture.getHeight())
 			throw new IllegalArgumentException("Invalid nine patch! The result of top plus bottom must be less or equals to texture region height.");
 	}
 

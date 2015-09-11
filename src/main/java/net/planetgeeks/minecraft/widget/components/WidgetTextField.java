@@ -48,26 +48,18 @@ public class WidgetTextField extends WidgetFocusable
 	@NonNull
 	private Pattern textPattern = Pattern.compile(".*", Pattern.DOTALL);
 
-	public WidgetTextField(int width, int height)
+	public WidgetTextField()
 	{
-		this(0, 0, width, height);
+		this("");
 	}
-
-	public WidgetTextField(int width, int height, String text)
+	
+	public WidgetTextField(String text)
 	{
-		this(0, 0, width, height, text);
-	}
-
-	public WidgetTextField(int xPosition, int yPosition, int width, int height)
-	{
-		this(xPosition, yPosition, width, height, "");
-	}
-
-	public WidgetTextField(int xPosition, int yPosition, int width, int height, String text)
-	{
-		super(xPosition, yPosition, width, height);
+		if(text == null)
+			text = "";
+		
 		getEventBus().register(new WidgetTextFieldHandler());
-		add(label = new WidgetFixedLabel(getWidth()));
+		add(label = new WidgetFixedLabel());
 		setHeight(getHeight());
 		setText(text);
 		Keyboard.enableRepeatEvents(true);

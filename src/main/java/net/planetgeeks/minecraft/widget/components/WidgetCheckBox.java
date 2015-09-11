@@ -1,7 +1,6 @@
 package net.planetgeeks.minecraft.widget.components;
 
 import lombok.Getter;
-import lombok.NonNull;
 import net.planetgeeks.minecraft.widget.events.WidgetActionEvent;
 import net.planetgeeks.minecraft.widget.events.WidgetActionEvent.WidgetActionListener;
 import net.planetgeeks.minecraft.widget.events.WidgetMousePressEvent;
@@ -11,6 +10,8 @@ import net.planetgeeks.minecraft.widget.events.WidgetMouseReleaseEvent.WidgetMou
 import net.planetgeeks.minecraft.widget.events.WidgetResizeEvent;
 import net.planetgeeks.minecraft.widget.interactive.WidgetInteractive;
 import net.planetgeeks.minecraft.widget.layout.Dimension;
+import net.planetgeeks.minecraft.widget.layout.Gap;
+import net.planetgeeks.minecraft.widget.layout.WidgetLayout;
 import net.planetgeeks.minecraft.widget.render.NinePatch;
 import net.planetgeeks.minecraft.widget.render.TextureRegion;
 import net.planetgeeks.minecraft.widget.render.WidgetRenderer;
@@ -28,31 +29,34 @@ public class WidgetCheckBox extends WidgetInteractive
 	private Box box;
 	@Getter
 	private WidgetLabel label;
+	private Gap boxTextGap = Gap.fixedGap(3);
 
-	public WidgetCheckBox(@NonNull String text, int xPosition, int yPosition)
+	public WidgetCheckBox()
 	{
-		super(xPosition, yPosition, 0, 0);
-
-		add(box = new Box(this));
-		add(label = new WidgetLabel("", box.getWidth(), 0));
-		setText(text);
+		this("");
 	}
 
 	public WidgetCheckBox(String text)
 	{
-		this(text, 0, 0);
+		add(box = new Box(this));
+		add(label = new WidgetLabel(text));
+	    setText(text);	
 	}
 
 	public void setText(String text)
 	{
 		label.setText(text);
-		setWidth(box.getWidth() + label.getWidth() + 3);
-		setHeight(box.getHeight() > label.getHeight() ? box.getHeight() : label.getHeight());
 	}
 
 	public String getText()
 	{
 		return label.getText();
+	}
+	
+	public void setBoxTextGap(int gap)
+	{
+		boxTextGap = Gap.fixedGap(gap);
+		layout();
 	}
 
 	@Override
@@ -65,16 +69,15 @@ public class WidgetCheckBox extends WidgetInteractive
 		this.checked = checked;
 		getEventBus().post(new WidgetActionEvent(this, this.checked ? CHECK_ACTION : UNCHECK_ACTION));
 	}
-	
+
 	public class Box extends WidgetInteractive
 	{
 		private NinePatch[] ninePatches;
-        private WidgetCheckBox checkBox;
-		
+		private WidgetCheckBox checkBox;
+
 		public Box(WidgetCheckBox checkBox)
 		{
-			super(9, 9);
-
+			this.setSize(new Dimension(9, 9));
 			this.checkBox = checkBox;
 			final WidgetBoxHandler boxHandler = new WidgetBoxHandler(this);
 			getEventBus().register(boxHandler);
@@ -86,7 +89,7 @@ public class WidgetCheckBox extends WidgetInteractive
 					boxHandler.playSoundLater();
 				}
 			});
-			
+
 			class InnerNinePatch extends NinePatch.Dynamic
 			{
 				public InnerNinePatch(WidgetInteractive component, TextureRegion texture, int left, int top, int right, int bottom)
@@ -113,12 +116,12 @@ public class WidgetCheckBox extends WidgetInteractive
 		{
 			private final Box box;
 			private boolean playSound = false;
-			
+
 			public WidgetBoxHandler(Box box)
 			{
 				this.box = box;
 			}
-			
+
 			@Override
 			public void onMousePressed(WidgetMousePressEvent event)
 			{
@@ -135,7 +138,7 @@ public class WidgetCheckBox extends WidgetInteractive
 					playSound = false;
 				}
 			}
-			
+
 			public void playSoundLater()
 			{
 				playSound = true;
@@ -157,6 +160,15 @@ public class WidgetCheckBox extends WidgetInteractive
 				ninePatches[CHECKED].draw(mouseX, mouseY, partialTicks, renderer);
 
 			renderer.pop();
+		}
+	}
+	
+	protected class WidgetCheckBoxLayout extends WidgetLayout
+	{
+		@Override
+		public void dispose()
+		{
+			
 		}
 	}
 }

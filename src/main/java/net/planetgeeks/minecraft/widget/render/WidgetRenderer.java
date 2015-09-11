@@ -1,6 +1,7 @@
 package net.planetgeeks.minecraft.widget.render;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import lombok.Getter;
@@ -19,6 +20,8 @@ import net.planetgeeks.minecraft.widget.util.Color;
 import net.planetgeeks.minecraft.widget.util.Point;
 import net.planetgeeks.minecraft.widget.util.WidgetUtil;
 
+import org.lwjgl.opengl.GL11;
+
 public class WidgetRenderer
 {
 	@Getter
@@ -27,8 +30,9 @@ public class WidgetRenderer
 	@Setter
 	private FontRenderer fontRenderer;
 	private RenderItem itemRenderer;
-	private State state = new State();
-	private List<State> pushes = new ArrayList<>();
+	private Color color = Color.WHITE;
+	private Point translation = new Point(0, 0);
+	private List<Restorable> pushes = new ArrayList<>();
 
 	public WidgetRenderer(@NonNull Widget component, FontRenderer fontRenderer, RenderItem itemRenderer)
 	{
@@ -40,6 +44,42 @@ public class WidgetRenderer
 	public WidgetRenderer(@NonNull Widget component)
 	{
 		this(component, WidgetUtil.getFontRenderer(), WidgetUtil.getItemRenderer());
+	}
+
+	/**
+	 * Rotating with a positive angle theta rotates points on the positive x axis toward the positive y axis.
+	 * 
+	 * @param theta the angle of rotation in radians
+	 */
+	public void rotate(double theta)
+	{
+		GL11.glRotated(theta, 0D, 0D, 1D);
+	}
+	
+	/**
+	 *  Rotating with a positive angle theta rotates points on the positive x axis toward the positive y axis.
+	 *  
+	 * @param theta the angle of rotation in radians
+	 * @param x the x coordinate of the origin of the rotation
+	 * @param y the y coordinate of the origin of the rotation
+	 */
+	public void rotate(double theta, int x, int y)
+	{
+		Point position = adjustPosition(x, y);
+		GL11.glTranslatef(position.getX(), position.getY(), 0);
+		GL11.glRotated(theta, 0D, 0D, 1D);
+		GL11.glTranslatef(-position.getX(), -position.getY(), 0);
+	}
+	
+	/**
+	 *  Rotating with a positive angle theta rotates points on the positive x axis toward the positive y axis.
+	 *  
+	 * @param theta the angle of rotation in radians
+	 * @param rotationOrigin the origin of the rotation
+	 */
+	public void rotate(double theta, @NonNull Point rotationOrigin)
+	{
+		rotate(theta, rotationOrigin.getX(), rotationOrigin.getY());
 	}
 
 	/**
@@ -69,11 +109,11 @@ public class WidgetRenderer
 	private void drawFilledRect(@NonNull Rectangle rectangle)
 	{
 		Rectangle clipped = getClippedRect(rectangle);
-		
-		//System.out.println(clipped);
+
+		// System.out.println(clipped);
 
 		if (clipped != null)
-			Widget.drawRect(clipped.getX(), clipped.getY(), clipped.getX() + clipped.getWidth(), clipped.getY() + clipped.getHeight(), state.color.getHex());
+			Widget.drawRect(clipped.getX(), clipped.getY(), clipped.getX() + clipped.getWidth(), clipped.getY() + clipped.getHeight(), color.getHex());
 	}
 
 	private Rectangle getClippedRect(@NonNull Rectangle rectangle)
@@ -155,10 +195,10 @@ public class WidgetRenderer
 	private void drawString(String text, Point position)
 	{
 		Rectangle clipped = new Rectangle(position, getStringSize(text)).intersect(getComponent().getVisibleArea());
-		
-		if(clipped != null /** && clipped.getHeight() >= getStringHeight() **/ )
+
+		if (clipped != null)
 		{
-			component.drawString(fontRenderer, fontRenderer.trimStringToWidth(text, clipped.getWidth()), position.getX(), position.getY(), state.color.getHex());
+			component.drawString(fontRenderer, fontRenderer.trimStringToWidth(text, clipped.getWidth()), position.getX(), position.getY(), color.getHex());
 		}
 	}
 
@@ -237,11 +277,11 @@ public class WidgetRenderer
 
 		while (filledHeight < heightToFill)
 		{
-			int nextFillHeight = filledHeight + textureRegion.getRegionHeight() > heightToFill ? heightToFill - filledHeight : textureRegion.getRegionHeight();
+			int nextFillHeight = filledHeight + textureRegion.getHeight() > heightToFill ? heightToFill - filledHeight : textureRegion.getHeight();
 
 			while (filledWidth < widthToFill)
 			{
-				int nextFillWidth = filledWidth + textureRegion.getRegionWidth() > widthToFill ? widthToFill - filledWidth : textureRegion.getRegionWidth();
+				int nextFillWidth = filledWidth + textureRegion.getWidth() > widthToFill ? widthToFill - filledWidth : textureRegion.getWidth();
 
 				drawTexturedModalRect(new Rectangle(position, new Dimension(nextFillWidth, nextFillHeight)), textureRegion.getTextureX(), textureRegion.getTextureY());
 				position.translate(nextFillWidth, 0);
@@ -283,8 +323,8 @@ public class WidgetRenderer
 	}
 
 	/**
-	 * Draws an ItemStack with a custom overlay (the overlay rendered is usually the
-	 * ItemStack's size) at the given position.
+	 * Draws an ItemStack with a custom overlay (the overlay rendered is usually
+	 * the ItemStack's size) at the given position.
 	 * 
 	 * @param stack - the ItemStack to draw.
 	 * @param x - the X coordinate.
@@ -342,7 +382,7 @@ public class WidgetRenderer
 	{
 		return fontRenderer.FONT_HEIGHT;
 	}
-	
+
 	private Dimension getStringSize(@NonNull String text)
 	{
 		return new Dimension(getStringWidth(text), getStringHeight());
@@ -359,7 +399,7 @@ public class WidgetRenderer
 	 */
 	public void translate(int x, int y)
 	{
-		this.state.translate(x, y);
+		this.translation.translate(x, y);
 	}
 
 	/**
@@ -372,8 +412,36 @@ public class WidgetRenderer
 	{
 		synchronized (pushes)
 		{
-			this.pushes.add(state.clone());
+			RestorableGroup pushGroup = new RestorableGroup();
+
+			pushGroup.add(new RestorableObject<Color>(color.clone())
+			{
+				@Override
+				public void restore()
+				{
+					color = getRestorableObj();
+				}
+			});
+
+			pushGroup.add(new RestorableObject<Point>(translation.clone())
+			{
+				@Override
+				public void restore()
+				{
+					translation = getRestorableObj();
+				}
+			});
+			
+			pushGroup.add(pushGLMatrix());
+
+			this.pushes.add(pushGroup);
 		}
+	}
+	
+	private RestorableGLMatrix pushGLMatrix()
+	{
+		GL11.glPushMatrix();
+		return new RestorableGLMatrix();
 	}
 
 	/**
@@ -384,7 +452,7 @@ public class WidgetRenderer
 	 */
 	public void setColor(Color color)
 	{
-		state.color = color;
+		this.color = color;
 	}
 
 	/**
@@ -395,7 +463,7 @@ public class WidgetRenderer
 	 */
 	public Color getColor()
 	{
-		return state.color;
+		return color;
 	}
 
 	/**
@@ -411,7 +479,7 @@ public class WidgetRenderer
 		{
 			if (this.pushes.size() > 0)
 			{
-				this.state = this.pushes.remove(this.pushes.size() - 1);
+				this.pushes.remove(this.pushes.size() - 1).restore();
 				return true;
 			}
 		}
@@ -430,39 +498,59 @@ public class WidgetRenderer
 
 	private Point adjustPosition(int x, int y)
 	{
-		return new Point(x, y).translate(component.getXOnScreen(), component.getYOnScreen()).translate(state.translation);
+		return new Point(x, y).translate(component.getXOnScreen(), component.getYOnScreen()).translate(translation);
 	}
 
-	class State implements Cloneable
+	interface Restorable
 	{
-		private Color color;
-		private Point translation;
+		void restore();
+	}
 
-		public State(Point translation, Color color)
+	abstract class RestorableObject<T> implements Restorable
+	{
+		@Getter
+		private T restorableObj;
+
+		public RestorableObject(T obj)
 		{
-			this.color = color;
-			this.translation = translation;
+			this.restorableObj = obj;
 		}
-
-		public State()
+	}
+	
+	class RestorableGLMatrix implements Restorable
+	{
+		@Override
+		public void restore()
 		{
-			this(new Point(0, 0), Color.WHITE);
+			GL11.glPopMatrix();
+		}
+	}
+
+	class RestorableGroup implements Restorable
+	{
+		private List<Restorable> elements = new ArrayList<>();
+
+		public void add(Restorable element)
+		{
+			synchronized (elements)
+			{
+				elements.add(element);
+			}
 		}
 
 		@Override
-		public State clone()
+		public void restore()
 		{
-			return new State(translation.clone(), color.clone());
-		}
+			synchronized (elements)
+			{
+				Iterator<Restorable> it = elements.iterator();
 
-		public void translate(int x, int y)
-		{
-			this.translation.translate(x, y);
-		}
-
-		public void translate(@NonNull Point translation)
-		{
-			this.translation.translate(translation);
+				while (it.hasNext())
+				{
+					it.next().restore();
+					it.remove();
+				}
+			}
 		}
 	}
 }

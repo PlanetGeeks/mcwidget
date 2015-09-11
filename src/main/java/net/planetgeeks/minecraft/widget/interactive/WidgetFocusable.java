@@ -35,15 +35,8 @@ public abstract class WidgetFocusable extends WidgetInteractive implements Focus
 	private boolean focused = false;
 	private FocusPolicy focusPolicy = PRESS_COMPONENT_OR_CHILD;
 
-	public WidgetFocusable(int width, int height)
+	public WidgetFocusable()
 	{
-		super(width, height);
-	}
-
-	public WidgetFocusable(int xPosition, int yPosition, int width, int height)
-	{
-		super(xPosition, yPosition, width, height);
-
 		class FocusableHandler
 		{
 			private final WidgetFocusable focusable;
